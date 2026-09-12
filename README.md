@@ -37,6 +37,20 @@ The generator needs an Anthropic API key. In the Vercel project:
 Without this variable set, the **+ Request posts** button will show a clear
 error instead of failing silently.
 
+### If your key isn't scoped to a workspace
+
+Anthropic API keys created at the organization level (rather than inside a
+specific workspace) must name the workspace on every request. If you see the
+error *"This API key is not scoped to a workspace"*, add a second environment
+variable:
+
+- `ANTHROPIC_WORKSPACE_ID` — the workspace ID from the Anthropic Console
+  (Settings → Workspaces → click the workspace; the ID appears in the URL and
+  on the workspace page, and looks like `wrkspc_...`).
+
+Then redeploy. If your key *is* already scoped to a workspace, leave this
+variable unset — the code only sends the header when it's present.
+
 ## Deploying
 
 This repo needs no build step — it's a static site plus one serverless
