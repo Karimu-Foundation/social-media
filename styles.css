@@ -303,6 +303,11 @@ footer.app-footer {
   .top-actions select, .top-actions input[type="search"] { flex: 1; }
 }
 
+button.ghost.danger { color: var(--flagged); border-color: transparent; }
+button.ghost.danger:hover { border-color: var(--flagged); background: #fbe9e1; }
+.top-actions button.ghost { background: transparent; color: var(--offwhite); border-color: #3a3a36; }
+.top-actions button.ghost:hover { border-color: var(--offwhite); }
+
 /* Artwork preview — the kraft frame renders at true 1080px, scaled to fit.
    `zoom` (not `transform: scale`) so the container height shrinks with it. */
 .artwork-stage {

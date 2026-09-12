@@ -28,6 +28,18 @@
     return SIZES[format] || SIZES._default;
   }
 
+  // A photo slot: renders the real image when the generator matched one from
+  // the library, and falls back to the dashed shot-brief placeholder when not.
+  function slot(h, kick, a, fileKey, briefKey, rot, fallback) {
+    const file = a && a[fileKey];
+    if (file) {
+      return "<div class='photo' style='transform:rotate(" + rot + "deg)'>" +
+        "<div class='well' style='height:" + h + "px;padding:0;border:none'>" +
+        "<img src='" + esc(file) + "' alt=''></div></div>";
+    }
+    return K.well(h, kick, shotBrief(a, briefKey, fallback), rot);
+  }
+
   function shotBrief(a, key, fallback) {
     const v = a && a[key];
     return esc(v || fallback || "ASSET NEEDED — no photo sourced yet. Add the shot brief here.");
@@ -44,7 +56,7 @@
       (a.script ? "<div class='script grn' style='font-size:58px;margin-top:16px'>" + esc(a.script) + "</div>" : "") +
       "<div class='dots'></div>" + bullets +
       "<div class='sp'></div>" +
-      K.well(420, "photo", shotBrief(a, "photoBrief"), -1.3) +
+      slot(420, "photo", a, "photoFile", "photoBrief", -1.3) +
       "<div class='sp'></div>" +
       (a.thanks ? "<div class='rbox' style='text-align:center'>" + esc(a.thanks) + "</div>" : "") +
       K.logo(LOGO_SRC) +
@@ -56,7 +68,7 @@
       "<div class='sp'></div>" +
       K.quote(esc(a.quote || ""), esc(a.name || ""), esc(a.role || ""), 76) +
       "<div class='sp'></div>" +
-      K.well(360, "photo", shotBrief(a, "photoBrief"), 1.2) +
+      slot(360, "photo", a, "photoFile", "photoBrief", 1.2) +
       "<div class='sp'></div>" +
       (a.script ? "<div class='script grn' style='font-size:52px;text-align:center'>" + esc(a.script) + "</div>" : "") +
       K.logo(LOGO_SRC) +
@@ -99,11 +111,21 @@
       K.logo(LOGO_SRC);
   }
 
+  function beforeAfterPair(a, h) {
+    const cell = (lbl, color, fileKey, briefKey, rot, fallback) =>
+      "<div style='flex:1;position:relative'>" + K.chipLabel(lbl, color) +
+      slot(h, "photo", a, fileKey, briefKey, rot, fallback) + "</div>";
+    return "<div style='display:flex;gap:26px;align-items:flex-start'>" +
+      cell("Before", "#8A6A32", "beforePhotoFile", "beforeBrief", -1.3, "BEFORE — describe the original state.") +
+      cell("After", "#BF4526", "afterPhotoFile", "afterBrief", 1.3, "AFTER — describe the completed state.") +
+      "</div>";
+  }
+
   function beforeAfter(a) {
     return "<div class='tab'>" + esc(a.tab || "") + "</div>" +
       "<h2 style='font-size:62px;margin-top:22px'>" + esc(a.headline || "") + "</h2>" +
       "<div style='margin-top:40px'></div>" +
-      K.beforeafter(400, shotBrief(a, "beforeBrief", "BEFORE — describe the original state."), shotBrief(a, "afterBrief", "AFTER — describe the completed state.")) +
+      beforeAfterPair(a, 400) +
       "<div class='sp'></div>" +
       (a.result ? "<div class='body' style='text-align:center;padding:0 20px'>" + esc(a.result) + "</div>" : "") +
       "<div class='sp'></div>" +
@@ -117,7 +139,7 @@
       (a.quote ? "<div style=\"border-left:8px solid #D6E77C;padding-left:26px;font-family:'Nunito Sans',sans-serif;font-style:italic;font-size:36px;line-height:1.34;color:#3A362C\">&ldquo;" + esc(a.quote) + "&rdquo;</div>" : "") +
       (a.source ? "<div style=\"margin-top:18px;font-family:'Nunito Sans',sans-serif;font-size:28px;color:#6B6250\">— " + esc(a.source) + "</div>" : "") +
       "<div class='sp'></div>" +
-      K.well(380, "photo", shotBrief(a, "photoBrief"), -1.2) +
+      slot(380, "photo", a, "photoFile", "photoBrief", -1.2) +
       "<div class='sp'></div>" +
       (a.script ? "<div class='script grn' style='font-size:52px;text-align:center'>" + esc(a.script) + "</div>" : "") +
       K.logo(LOGO_SRC) +
@@ -128,7 +150,7 @@
     return "<h1 style='font-size:76px'>" + esc(a.headline || "") + "</h1>" +
       (a.banner ? K.banner(esc(a.banner), "#BF4526", 60, 3) : "") +
       "<div style='margin-top:40px'></div>" +
-      K.well(520, "photo", shotBrief(a, "photoBrief"), -1.3) +
+      slot(520, "photo", a, "photoFile", "photoBrief", -1.3) +
       "<div class='sp'></div>" +
       (a.script ? "<div class='script grn' style='font-size:54px;text-align:center'>" + esc(a.script) + "</div>" : "") +
       K.logo(LOGO_SRC) +
@@ -139,7 +161,7 @@
     return "<h1 style='font-size:82px;margin-top:30px'>" + esc(a.headline || "") + "</h1>" +
       (a.banner ? K.banner(esc(a.banner), "#BF4526", 64, 5) : "") +
       "<div style='margin-top:40px'></div>" +
-      K.well(620, "photo / first frame", shotBrief(a, "photoBrief"), -1.2) +
+      slot(620, "photo / first frame", a, "photoFile", "photoBrief", -1.2) +
       "<div class='sp'></div>" +
       (a.script ? "<div class='script grn' style='font-size:58px;text-align:center'>" + esc(a.script) + "</div>" : "") +
       K.logo(LOGO_SRC);

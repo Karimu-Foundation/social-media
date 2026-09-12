@@ -1,0 +1,16 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "karimu-content-studio",
+      "runtimeExecutable": "vercel",
+      "runtimeArgs": [
+        "dev",
+        "--listen",
+        "3103",
+        "--yes"
+      ],
+      "port": 3103
+    }
+  ]
+}

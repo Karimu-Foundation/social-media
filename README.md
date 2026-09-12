@@ -72,6 +72,30 @@ When facts change (new newsletter, new Annual Report), update the source
 redeploy — the generator always reads the files bundled in the deployment,
 so a stale file means stale drafts.
 
+## Artwork and the photo library
+
+Each AI-drafted post carries an `artwork` spec — the short on-image text,
+separate from the caption. `kraft-kit.js` + `kraft-render.js` render that as a
+real kraft-style card at the right size for its format, previewed in the post
+modal with a **Download PNG** button.
+
+Photo slots are filled from `photo-index.json`, a curated set of photos pulled
+from the Karimu shared Drive and committed (resized) under `images/library/`.
+The generator picks a photo by matching ward, place, year and subject, and any
+id it invents is discarded rather than rendered broken. When nothing fits, the
+slot stays a dashed shot brief and `assets` says `ASSET NEEDED`.
+
+Photos are committed rather than linked from Drive on purpose: Drive URLs would
+taint the canvas and break the PNG export, and would require every viewer to be
+signed into Google.
+
+## Removing posts
+
+Any post can be removed with the 🗑 button on its card or in its modal.
+Seed posts are hidden and can be brought back with **Show removed** in the
+header; removed AI drafts are deleted outright. Like approvals, this is stored
+per browser.
+
 ## Limitations to know about
 
 - No shared/server-side database: approvals and AI-drafted posts live in

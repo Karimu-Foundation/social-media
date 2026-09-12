@@ -38,7 +38,8 @@ function loadKnowledge() {
   }).join("");
 }
 
-const SCHEMA_INSTRUCTIONS = `
+function schemaInstructions(photos) {
+  return `
 You must respond with ONLY a JSON array (no prose, no markdown fences) of post
 objects. Each object must have exactly these fields:
 
@@ -68,15 +69,32 @@ The "artwork" object is what gets rendered as the actual kraft-style card, so
 fill it with the on-image text only (short, punchy), never the full caption.
 Its shape depends on the format:
 
-- "Announcement card": { tab, headline (≤8 words), script, bullets: [2-3 short lines], photoBrief, thanks }
-- "Quote card": { tab: "Karimu Talks", quote (≤25 words, verbatim), name, role, photoBrief, script }
+- "Announcement card": { tab, headline (≤8 words), script, bullets: [2-3 short lines], photoId, photoBrief, thanks }
+- "Quote card": { tab: "Karimu Talks", quote (≤25 words, verbatim), name, role, photoId, photoBrief, script }
 - "Single-stat card": { tab, stat (e.g. "99%"), statLabel, body }
 - "CTA card": { headline (≤6 words), script, chip, bullets: [2 short lines], payoff }
 - "Data card": { tab, stats: [{value, label (≤6 words)}] (2-3 rows), script (≤10 words), chips: [up to 2] }
-- "Before / After": { tab, headline (≤8 words), beforeBrief, afterBrief, result (≤12 words), payoff }
-- "News / milestone card": { tab, headline, quote, source, photoBrief, script }
-- "Hook + payoff carousel" / "Full carousel": { headline, banner, photoBrief, script }
-- "Reel" / "Story": { headline, banner, photoBrief, script }
+- "Before / After": { tab, headline (≤8 words), beforePhotoId, afterPhotoId, beforeBrief, afterBrief, result (≤12 words), payoff }
+- "News / milestone card": { tab, headline, quote, source, photoId, photoBrief, script }
+- "Hook + payoff carousel" / "Full carousel": { headline, banner, photoId, photoBrief, script }
+- "Reel" / "Story": { headline, banner, photoId, photoBrief, script }
+
+PHOTOS — pick from the library below, do not invent one:
+${photoCatalogue(photos)}
+
+- Set "photoId" (and "beforePhotoId"/"afterPhotoId" on a Before / After card) to
+  an id from that list whenever a photo genuinely matches the story's ward,
+  place and subject. The card then renders with the real photo.
+- Match honestly. A Tsaayo bathroom photo does not illustrate a Dabil water
+  story, and a 2018 photo is not evidence of 2026 work. Wrong ward or wrong
+  project is worse than no photo.
+- For a Before / After card, the two photos must be the same subject and the
+  "before" one must actually carry stage "before".
+- When nothing in the library fits, leave photoId empty and write a
+  "photoBrief" describing the shot that still needs sourcing. Also set
+  "assets" to "ASSET NEEDED: ..." in that case.
+- Always fill "photoBrief" too, even when a photoId is set — it tells the
+  reviewer what the slot is meant to show.
 
 Rules for "artwork":
 - Every *Brief field describes the photo that still needs sourcing — write it as a
@@ -118,6 +136,24 @@ Hard rules (from the knowledge base, restated for emphasis):
   school + location together).
 - US English spelling, currency in USD unless quoting a Tanzanian source.
 `;
+}
+
+function loadPhotoIndex() {
+  try {
+    const file = path.join(process.cwd(), "photo-index.json");
+    const data = JSON.parse(fs.readFileSync(file, "utf8"));
+    return data.photos || [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function photoCatalogue(photos) {
+  if (!photos.length) return "\n(No photo library is available in this deployment.)\n";
+  return photos.map(p =>
+    `- id: ${p.id} | ward: ${p.ward} | place: ${p.place} | year: ${p.year} | stage: ${p.stage} | topics: ${(p.topics || []).join(", ")} | shows: ${p.caption}`
+  ).join("\n");
+}
 
 module.exports = async (req, res) => {
   // Safe diagnostic: GET returns only whether the env vars are visible to this
@@ -171,6 +207,9 @@ module.exports = async (req, res) => {
   const qty = Math.max(1, Math.min(10, parseInt(quantity, 10) || 3));
 
   const knowledge = loadKnowledge();
+  const photos = loadPhotoIndex();
+  const photoById = {};
+  photos.forEach((p) => { photoById[p.id] = p; });
 
   const requestBrief = `
 New content request from the social media team:
@@ -187,7 +226,7 @@ New content request from the social media team:
 
   const systemPrompt = `You are the Karimu Comms Agent, the in-house content specialist for Karimu International Help Foundation. Ground every draft strictly in the following knowledge base. Do not use any fact, name, or figure that isn't in it.
 ${knowledge}
-${SCHEMA_INSTRUCTIONS}`;
+${schemaInstructions(photos)}`;
 
   // Org-level (unscoped) API keys must name a workspace explicitly. Set
   // ANTHROPIC_WORKSPACE_ID in the Vercel environment variables if your key
@@ -239,13 +278,31 @@ ${SCHEMA_INSTRUCTIONS}`;
 
     if (!Array.isArray(posts)) posts = [posts];
 
-    const stamped = posts.map((p, i) => ({
-      id: `gen-${Date.now()}-${i}`,
-      images: [],
-      ...p,
-      generated: true,
-      generatedAt: new Date().toISOString(),
-    }));
+    const stamped = posts.map((p, i) => {
+      const art = p.artwork || {};
+      // Resolve photo ids against the real library. Anything the model made up
+      // is dropped rather than rendered as a broken image.
+      ["photoId", "beforePhotoId", "afterPhotoId"].forEach((key) => {
+        const chosen = art[key];
+        if (!chosen) return;
+        const match = photoById[chosen];
+        if (match) {
+          const fileKey = key.replace("Id", "File");
+          art[fileKey] = match.file;
+          art[key.replace("Id", "Credit")] = match.caption;
+        } else {
+          delete art[key];
+        }
+      });
+      return {
+        id: `gen-${Date.now()}-${i}`,
+        images: [],
+        ...p,
+        artwork: art,
+        generated: true,
+        generatedAt: new Date().toISOString(),
+      };
+    });
 
     res.status(200).json({ posts: stamped });
   } catch (e) {

@@ -4,6 +4,26 @@
 
 const STORAGE_KEY = "karimu-posts-state-v1";
 const GENERATED_KEY = "karimu-posts-generated-v1";
+const DELETED_KEY = "karimu-posts-deleted-v1";
+
+function loadDeleted() {
+  try {
+    const raw = localStorage.getItem(DELETED_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveDeleted(list) {
+  try {
+    localStorage.setItem(DELETED_KEY, JSON.stringify(list));
+  } catch (e) {
+    console.warn("Could not save the deleted list.", e);
+  }
+}
+
+let deletedIds = loadDeleted();
 
 function loadGenerated() {
   try {
@@ -23,6 +43,9 @@ function saveGenerated(list) {
   }
 }
 
+// Keep an untouched snapshot of the seed posts so removals can be undone.
+const SEED_POSTS = POSTS.slice();
+
 // Merge locally-generated posts (this browser only, same as approval state)
 // into the seed POSTS array so they render in the same pillars/grid.
 // Any pillar name a generated post uses that isn't already in PILLAR_ORDER
@@ -32,6 +55,11 @@ POSTS.push(...generatedPosts);
 generatedPosts.forEach((p) => {
   if (p.pillar && !PILLAR_ORDER.includes(p.pillar)) PILLAR_ORDER.push(p.pillar);
 });
+
+// Drop anything the user removed earlier.
+for (let i = POSTS.length - 1; i >= 0; i--) {
+  if (deletedIds.includes(POSTS[i].id)) POSTS.splice(i, 1);
+}
 
 function loadState() {
   try {
@@ -152,6 +180,7 @@ function cardHTML(post) {
       <button class="small primary" ${entry.status === "approved" ? "disabled" : ""} onclick="setStatus('${post.id}', 'approved')">✓ Approve</button>
       <button class="small warn" onclick="openModal('${post.id}', true)">↩ Revise</button>
       <button class="small ghost" onclick="togglePosted('${post.id}')">${entry.posted ? "Posted ✓" : "📤 Mark Posted"}</button>
+      <button class="small ghost danger" title="Remove this post" onclick="deletePost('${post.id}')">🗑</button>
     </div>
   </div>`;
 }
@@ -287,7 +316,7 @@ function openModal(id, focusRevision) {
           <button class="primary" ${entry.status === "approved" ? "disabled" : ""} onclick="setStatus('${post.id}', 'approved')">✓ Approve</button>
           <button class="ghost" onclick="setStatus('${post.id}', 'pending')">Reset to Pending</button>
           <button class="ghost" onclick="togglePosted('${post.id}')">${entry.posted ? "Posted ✓ (undo)" : "📤 Mark Posted"}</button>
-          ${post.generated ? `<button class="ghost" onclick="deleteGeneratedPost('${post.id}')">🗑 Remove draft</button>` : ""}
+          <button class="ghost danger" onclick="deletePost('${post.id}')">🗑 Remove post</button>
         </div>
         <div class="revision-box">
           <textarea id="revision-note" placeholder="What needs to change before this can be approved?">${focusRevision ? "" : ""}</textarea>
@@ -581,15 +610,42 @@ async function submitRequest() {
   }
 }
 
-// Allow removing a generated draft entirely (e.g. after it's copied elsewhere
-// or rejected outright) — seed posts from posts-data.js cannot be deleted here.
-function deleteGeneratedPost(id) {
-  if (!confirm("Remove this draft? This can't be undone in this browser.")) return;
-  const stored = loadGenerated().filter((p) => p.id !== id);
-  saveGenerated(stored);
+// Remove a post from the queue. Works on any post — seed or AI-drafted.
+// Seed posts are hidden via a deleted-ids list so they can be restored;
+// AI-drafted posts are dropped from storage outright.
+function deletePost(id) {
+  const post = POSTS.find((p) => p.id === id);
+  if (!post) return;
+  const label = post.title ? `“${post.title}”` : "this post";
+  if (!confirm(`Remove ${label} from the queue?\n\nYou can bring it back with "Show removed" in the header.`)) return;
+
+  if (post.generated) {
+    saveGenerated(loadGenerated().filter((p) => p.id !== id));
+  }
+  if (!deletedIds.includes(id)) {
+    deletedIds.push(id);
+    saveDeleted(deletedIds);
+  }
   const idx = POSTS.findIndex((p) => p.id === id);
   if (idx !== -1) POSTS.splice(idx, 1);
   closeModal();
+  renderAll();
+}
+
+// Restore everything that was removed (seed posts only — AI drafts are gone).
+function restoreDeleted() {
+  if (!deletedIds.length) {
+    alert("Nothing has been removed.");
+    return;
+  }
+  const restorable = deletedIds.filter((id) => SEED_POSTS.some((p) => p.id === id));
+  if (!confirm(`Restore ${restorable.length} removed post${restorable.length === 1 ? "" : "s"}?\n\nAI-drafted posts that were removed can't be restored.`)) return;
+  deletedIds = deletedIds.filter((id) => !restorable.includes(id));
+  saveDeleted(deletedIds);
+  restorable.forEach((id) => {
+    const seed = SEED_POSTS.find((p) => p.id === id);
+    if (seed && !POSTS.some((p) => p.id === id)) POSTS.push(seed);
+  });
   renderAll();
 }
 

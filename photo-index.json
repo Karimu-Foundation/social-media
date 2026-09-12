@@ -1,0 +1,179 @@
+{
+ "note": "Curated photo library pulled from the Karimu shared Drive. Tags were assigned after visual review. Photos are resized copies committed to this repo so the artwork renderer and the PNG export can use them without CORS or Drive sign-in. Re-run the library script to extend it.",
+ "drive": "https://drive.google.com/drive/u/0/folders/0AFQB35McY4XQUk9PVA",
+ "generated": "2026-09-12",
+ "photos": [
+  {
+   "id": "1-jQ1vqu1n",
+   "file": "images/library/1-jQ1vqu1n.jpg",
+   "title": "2018-04 Endasago-Students Bathrooms-002.jpg",
+   "driveId": "1-jQ1vqu1n0000",
+   "ward": "Arri",
+   "place": "Endasago Primary School",
+   "year": 2018,
+   "stage": "before",
+   "topics": [
+    "sanitation",
+    "bathrooms",
+    "school"
+   ],
+   "caption": "The old student latrines at Endasago Primary School, 2018 — mud-brick stalls, no doors, no handwashing."
+  },
+  {
+   "id": "16CpEjEbBS",
+   "file": "images/library/16CpEjEbBS.jpg",
+   "title": "2018-04 Dohom secondary school-Students walking 2Km to the river to fetch water-002.JPG",
+   "ward": "Arri",
+   "place": "Dohom Secondary School",
+   "year": 2018,
+   "stage": "before",
+   "topics": [
+    "water",
+    "school",
+    "daily life"
+   ],
+   "caption": "Students at Dohom Secondary walking to the river with buckets, 2018 — a 2 km round trip to fetch water for school meals."
+  },
+  {
+   "id": "19bXvtFx1C",
+   "file": "images/library/19bXvtFx1C.jpg",
+   "title": "2026-09-03 Arri-Tsaayo Bathrooms-Incinerator.jpg",
+   "ward": "Arri",
+   "place": "Tsaayo Primary School",
+   "year": 2026,
+   "stage": "after",
+   "topics": [
+    "sanitation",
+    "bathrooms",
+    "school",
+    "menstrual health"
+   ],
+   "caption": "The incinerator at the completed Tsaayo Primary bathrooms, September 2026."
+  },
+  {
+   "id": "1B5Q3lppnu",
+   "file": "images/library/1B5Q3lppnu.jpg",
+   "title": "2026-09-03 Arri-Tsaayo Bathrooms-Bathrooms Appearance after its Completion(3).jpg",
+   "ward": "Arri",
+   "place": "Tsaayo Primary School",
+   "year": 2026,
+   "stage": "after",
+   "topics": [
+    "sanitation",
+    "bathrooms",
+    "school",
+    "construction"
+   ],
+   "caption": "The completed bathroom blocks at Tsaayo Primary School, September 2026."
+  },
+  {
+   "id": "1CkVNyNJoP",
+   "file": "images/library/1CkVNyNJoP.jpg",
+   "title": "2021-08-31 New Classrooms with furnitures 02.jpg",
+   "ward": "Ayalagaya",
+   "place": "Classroom",
+   "year": 2021,
+   "stage": "in use",
+   "topics": [
+    "education",
+    "classrooms",
+    "students",
+    "teachers"
+   ],
+   "caption": "A classroom in use — students at the board with their teacher."
+  },
+  {
+   "id": "1J5xmcOQRM",
+   "file": "images/library/1J5xmcOQRM.jpg",
+   "title": "2023-07-10 Dareda Health Center New Equipment 02.jpg",
+   "ward": "Ayalagaya",
+   "place": "Dareda Kati Health Center",
+   "year": 2023,
+   "stage": "in use",
+   "topics": [
+    "health",
+    "health center",
+    "staff",
+    "equipment"
+   ],
+   "caption": "A clinician at work inside Dareda Kati Health Center, 2023."
+  },
+  {
+   "id": "1JzouMLZZ9",
+   "file": "images/library/1JzouMLZZ9.jpg",
+   "title": "2021-12-06 Sanitation - Tsaayo bathrooms - View of the bathrooms - 31.jpg",
+   "ward": "Arri",
+   "place": "Tsaayo Primary School",
+   "year": 2021,
+   "stage": "after",
+   "topics": [
+    "sanitation",
+    "bathrooms",
+    "school"
+   ],
+   "caption": "The Tsaayo school bathrooms seen from the grounds, 2021."
+  },
+  {
+   "id": "1dFvMJ4dvK",
+   "file": "images/library/1dFvMJ4dvK.jpg",
+   "title": "2022-06-04 Health-DK Health Center-View of Maternity building-03.jpg",
+   "ward": "Ayalagaya",
+   "place": "Dareda Kati Health Center",
+   "year": 2022,
+   "stage": "after",
+   "topics": [
+    "health",
+    "maternity",
+    "health center",
+    "construction"
+   ],
+   "caption": "The maternity building at Dareda Kati Health Center, 2022."
+  },
+  {
+   "id": "1dXszpo4YD",
+   "file": "images/library/1dXszpo4YD.jpg",
+   "title": "2021-09-29 water project - Shortage of water at Arri 09.jpg",
+   "ward": "Arri",
+   "place": "Arri Ward",
+   "year": 2021,
+   "stage": "before",
+   "topics": [
+    "water",
+    "daily life"
+   ],
+   "caption": "Drawing water from an open pit during a shortage in Arri, 2021."
+  },
+  {
+   "id": "1gAghCJxyd",
+   "file": "images/library/1gAghCJxyd.jpg",
+   "title": "2021-02-10 Sharmo students fetching water.jpg",
+   "ward": "Arri",
+   "place": "Sharmo",
+   "year": 2021,
+   "stage": "before",
+   "topics": [
+    "water",
+    "school",
+    "students",
+    "daily life"
+   ],
+   "caption": "Students in Sharmo filling buckets from a muddy streambed, 2021."
+  },
+  {
+   "id": "1hXwtE5lXk",
+   "file": "images/library/1hXwtE5lXk.jpg",
+   "title": "2026-09-03 Arri-Tsaayo Bathrooms-Drawings showing Students right way to Wash their Hands.jpg",
+   "ward": "Arri",
+   "place": "Tsaayo Primary School",
+   "year": 2026,
+   "stage": "after",
+   "topics": [
+    "sanitation",
+    "hygiene",
+    "handwashing",
+    "school"
+   ],
+   "caption": "Handwashing station and hygiene pictograms at the new Tsaayo Primary bathrooms, September 2026."
+  }
+ ]
+}
