@@ -60,8 +60,31 @@ objects. Each object must have exactly these fields:
   "notes": string,                 // verification flags, [VERIFY: ...] for any unconfirmed figure
   "flagged": boolean,              // true if this post needs explicit human sign-off before publishing (new facts, sensitive topic, child imagery, etc.)
   "formatReason": string,          // one sentence: why this format fits this story, per the decision table
+  "artwork": object,               // the on-card content, shaped by format — see below
   "images": []                     // always an empty array — no real photos can be attached automatically
 }
+
+The "artwork" object is what gets rendered as the actual kraft-style card, so
+fill it with the on-image text only (short, punchy), never the full caption.
+Its shape depends on the format:
+
+- "Announcement card": { tab, headline (≤8 words), script, bullets: [2-3 short lines], photoBrief, thanks }
+- "Quote card": { tab: "Karimu Talks", quote (≤25 words, verbatim), name, role, photoBrief, script }
+- "Single-stat card": { tab, stat (e.g. "99%"), statLabel, body }
+- "CTA card": { headline (≤6 words), script, chip, bullets: [2 short lines], payoff }
+- "Data card": { tab, stats: [{value, label (≤6 words)}] (2-3 rows), script (≤10 words), chips: [up to 2] }
+- "Before / After": { tab, headline (≤8 words), beforeBrief, afterBrief, result (≤12 words), payoff }
+- "News / milestone card": { tab, headline, quote, source, photoBrief, script }
+- "Hook + payoff carousel" / "Full carousel": { headline, banner, photoBrief, script }
+- "Reel" / "Story": { headline, banner, photoBrief, script }
+
+Rules for "artwork":
+- Every *Brief field describes the photo that still needs sourcing — write it as a
+  shot brief (subject, ward, framing), never as a claim that a photo exists.
+- Keep on-card text far shorter than the caption. Headlines are ≤8 words, stat
+  labels ≤6 words, script payoffs ≤10 words.
+- Every figure in a stat row states its cohort, ward and year where relevant.
+- Never put a bullet list on a Before / After card — it competes with the photos.
 
 Format selection (read post-formats.md before writing a word):
 - Pick the post's SHAPE first, using the decision table in post-formats.md. The
