@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate-posts.js": {
+      "maxDuration": 60
+    }
+  }
+}

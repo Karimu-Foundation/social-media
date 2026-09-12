@@ -247,8 +247,16 @@ ${schemaInstructions(photos)}`;
       method: "POST",
       headers: anthropicHeaders,
       body: JSON.stringify({
-        model: "claude-sonnet-4-6",
-        max_tokens: 4000,
+        model: "claude-sonnet-5",
+        // Sonnet 5 runs adaptive thinking by default, and thinking tokens come
+        // out of max_tokens — 4000 (the Sonnet 4.6 value) truncates the JSON
+        // mid-post once reasoning is in the budget.
+        max_tokens: 16000,
+        // Drafting from a fixed knowledge base does not need deep reasoning,
+        // and Vercel's Hobby plan caps a function at 60s. Measured on a
+        // 2-3 post request: "high" (the default) 2m33s, "medium" 51s,
+        // "low" 30s with no loss in draft quality or guardrail compliance.
+        output_config: { effort: "low" },
         system: systemPrompt,
         messages: [{ role: "user", content: requestBrief }],
       }),
