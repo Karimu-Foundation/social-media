@@ -128,14 +128,24 @@ New content request from the social media team:
 ${knowledge}
 ${SCHEMA_INSTRUCTIONS}`;
 
+  // Org-level (unscoped) API keys must name a workspace explicitly. Set
+  // ANTHROPIC_WORKSPACE_ID in the Vercel environment variables if your key
+  // isn't already scoped to a workspace; leave it unset if it is.
+  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
+
+  const anthropicHeaders = {
+    "Content-Type": "application/json",
+    "x-api-key": apiKey,
+    "anthropic-version": "2023-06-01",
+  };
+  if (workspaceId) {
+    anthropicHeaders["anthropic-workspace-id"] = workspaceId;
+  }
+
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
+      headers: anthropicHeaders,
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
         max_tokens: 4000,
