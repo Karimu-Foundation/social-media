@@ -43,6 +43,121 @@ function saveGenerated(list) {
   }
 }
 
+// ---- uploaded photo assets (this browser only, same as approval state) ----
+// Photos are kept as resized data URLs. Same-origin, so the PNG export's canvas
+// stays untainted (the reason Drive URLs were rejected), and small enough that a
+// batch fits in localStorage's ~5MB budget — a full-resolution phone photo would
+// exhaust the quota on the second file.
+const ASSETS_KEY = "karimu-posts-assets-v1";
+const ASSET_MAX_DIM = 1280; // the widest kraft photo slot renders at 1080
+const ASSET_QUALITY = 0.78;
+
+function loadAssets() {
+  try {
+    const raw = localStorage.getItem(ASSETS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) {
+    console.warn("Could not read uploaded assets, starting fresh.", e);
+    return {};
+  }
+}
+
+let ASSETS = loadAssets();
+
+// The artwork photo slots each format actually renders — see kraft-render.js.
+function photoSlotsFor(format) {
+  if (format === "Before / After") {
+    return [
+      { key: "beforePhotoFile", label: "Before photo" },
+      { key: "afterPhotoFile", label: "After photo" },
+    ];
+  }
+  if (format === "Data card" || format === "Single-stat card" || format === "CTA card") {
+    return []; // these templates are type-only
+  }
+  return [{ key: "photoFile", label: "Photo" }];
+}
+
+// Shrink an upload to something that both renders well and can be persisted.
+function fileToResizedDataURL(file) {
+  return new Promise((resolve, reject) => {
+    if (!/^image\//.test(file.type)) {
+      reject(new Error('"' + file.name + '" is not an image.'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read "' + file.name + '".'));
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('"' + file.name + '" could not be decoded. iPhone photos are often HEIC, which browsers cannot read — export as JPEG first.'));
+      img.onload = () => {
+        const scale = Math.min(1, ASSET_MAX_DIM / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d").drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", ASSET_QUALITY));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function persistAssets(next) {
+  try {
+    localStorage.setItem(ASSETS_KEY, JSON.stringify(next));
+  } catch (e) {
+    throw new Error("This browser's storage is full. Uploaded photos live in localStorage (about 5MB in total), so remove a photo from another post before adding more.");
+  }
+  ASSETS = next;
+}
+
+function storeAsset(postId, slotKey, dataUrl) {
+  const next = Object.assign({}, ASSETS);
+  next[postId] = Object.assign({}, next[postId]);
+  next[postId][slotKey] = dataUrl;
+  persistAssets(next);
+}
+
+function clearAsset(postId, slotKey) {
+  const next = Object.assign({}, ASSETS);
+  if (!next[postId]) return;
+  next[postId] = Object.assign({}, next[postId]);
+  delete next[postId][slotKey];
+  if (!Object.keys(next[postId]).length) delete next[postId];
+  persistAssets(next);
+}
+
+// Merge stored uploads into a post at render time rather than mutating it:
+// templates with photo slots get the real photo in place of the dashed shot
+// brief, type-only templates and seed posts get the plain card thumbnail.
+// Nothing is written back, so removing a photo just stops merging it and the
+// saved drafts never carry data URLs.
+function withAssets(post) {
+  const stored = ASSETS[post.id];
+  if (!stored || !Object.keys(stored).length) return post;
+  const slots = photoSlotsFor(post.format);
+  const merged = Object.assign({}, post);
+  if (post.artwork && slots.length) {
+    const art = Object.assign({}, post.artwork);
+    slots.forEach((s) => { if (stored[s.key]) art[s.key] = stored[s.key]; });
+    merged.artwork = art;
+    return merged;
+  }
+  const first = stored.photoFile || Object.values(stored)[0];
+  if (!first) return post;
+  merged.images = [{
+    thumb: first,
+    full: first,
+    caption: "Uploaded by the team — confirm consent before publishing",
+    needsConfirmation: true,
+  }].concat(post.images || []);
+  return merged;
+}
+
 // Keep an untouched snapshot of the seed posts so removals can be undone.
 const SEED_POSTS = POSTS.slice();
 
@@ -60,6 +175,7 @@ generatedPosts.forEach((p) => {
 for (let i = POSTS.length - 1; i >= 0; i--) {
   if (deletedIds.includes(POSTS[i].id)) POSTS.splice(i, 1);
 }
+
 
 function loadState() {
   try {
@@ -148,6 +264,7 @@ function statusBadge(status) {
 }
 
 function cardHTML(post) {
+  post = withAssets(post);
   const entry = getEntry(post.id);
   const channelBadges = post.channels.map((c) => `<span class="badge channel">${c}</span>`).join("");
   const flaggedBadge = post.flagged ? `<span class="badge flag">Needs sign-off</span>` : "";
@@ -246,8 +363,9 @@ function escapeHTML(str) {
 }
 
 function openModal(id, focusRevision) {
-  const post = POSTS.find((p) => p.id === id);
-  if (!post) return;
+  const basePost = POSTS.find((p) => p.id === id);
+  if (!basePost) return;
+  const post = withAssets(basePost);
   const entry = getEntry(id);
 
   const shotsTable = post.shots ? `
@@ -293,6 +411,46 @@ function openModal(id, focusRevision) {
       </div>
     </section>` : "";
 
+  // Photo slots the team can fill themselves. Uploads are per-browser, like
+  // approvals, and always land flagged for consent review.
+  const slots = photoSlotsFor(post.format);
+  const storedForPost = ASSETS[post.id] || {};
+  let uploadBody;
+  if (slots.length) {
+    uploadBody = slots.map((sl) => {
+      const has = !!storedForPost[sl.key];
+      return `
+        <div class="upload-row">
+          <span class="upload-label">${sl.label}</span>
+          <label class="small upload-btn">${has ? "Replace" : "Upload"}
+            <input type="file" accept="image/*" onchange="uploadSlot('${post.id}', '${sl.key}', this)" />
+          </label>
+          ${has ? `<button class="small ghost danger" onclick="removeSlotPhoto('${post.id}', '${sl.key}')">Remove</button>` : ""}
+          <span class="upload-state">${has ? "photo attached" : "shot brief only"}</span>
+        </div>`;
+    }).join("");
+  } else if (!post.artwork) {
+    const has = !!storedForPost.photoFile;
+    uploadBody = `
+      <div class="upload-row">
+        <span class="upload-label">Photo</span>
+        <label class="small upload-btn">${has ? "Replace" : "Upload"}
+          <input type="file" accept="image/*" onchange="uploadSlot('${post.id}', 'photoFile', this)" />
+        </label>
+        ${has ? `<button class="small ghost danger" onclick="removeSlotPhoto('${post.id}', 'photoFile')">Remove</button>` : ""}
+        <span class="upload-state">${has ? "photo attached" : "no photo yet"}</span>
+      </div>`;
+  } else {
+    uploadBody = `<div class="upload-row"><span class="upload-state">The ${escapeHTML(post.format)} template is type-only — it has no photo slot to fill.</span></div>`;
+  }
+
+  const uploadSection = `
+    <section>
+      <h4>Photos <span style="text-transform:none; letter-spacing:0; font-weight:400;">(stored in this browser only — confirm consent and the dignity / child-safety rules before anything is published)</span></h4>
+      ${uploadBody}
+      <div class="artwork-note" id="upload-note"></div>
+    </section>`;
+
   document.getElementById("modal-root").innerHTML = `
   <div class="overlay" id="overlay">
     <div class="modal">
@@ -317,6 +475,7 @@ function openModal(id, focusRevision) {
       ${shotsTable}
 
       ${artworkSection}
+      ${uploadSection}
 
       ${gallery}
 
@@ -369,6 +528,34 @@ function loadHtml2Canvas() {
     s.onerror = () => reject(new Error("Could not load the image exporter."));
     document.head.appendChild(s);
   });
+}
+
+// ---- photo uploads ----
+async function uploadSlot(postId, slotKey, input) {
+  const note = document.getElementById("upload-note");
+  const file = input.files && input.files[0];
+  input.value = ""; // so picking the same file again still fires onchange
+  if (!file) return;
+  if (note) { note.textContent = "Processing photo…"; note.classList.remove("error"); }
+  try {
+    const dataUrl = await fileToResizedDataURL(file);
+    storeAsset(postId, slotKey, dataUrl);
+    renderAll();
+    openModal(postId);
+  } catch (e) {
+    if (note) { note.textContent = e.message; note.classList.add("error"); }
+  }
+}
+
+function removeSlotPhoto(postId, slotKey) {
+  try {
+    clearAsset(postId, slotKey);
+    renderAll();
+    openModal(postId);
+  } catch (e) {
+    const note = document.getElementById("upload-note");
+    if (note) { note.textContent = e.message; note.classList.add("error"); }
+  }
 }
 
 async function downloadArtwork(id) {
@@ -549,6 +736,13 @@ function openRequestModal() {
         </div>
 
         <div class="field-row">
+          <label>Upload photos for these posts (optional)
+            <input type="file" id="req-photos" accept="image/*" multiple />
+          </label>
+          <div class="req-hint">Dropped into the drafts' photo slots in order, one per slot. Resized and kept in this browser only. JPEG or PNG — iPhone HEIC files need converting first.</div>
+        </div>
+
+        <div class="field-row">
           <label>Anything else the team should know
             <textarea id="req-notes" rows="2"></textarea>
           </label>
@@ -586,6 +780,7 @@ async function submitRequest() {
   const topic = document.getElementById("req-topic").value.trim();
   const assetsAvailable = document.getElementById("req-assets").value.trim();
   const notes = document.getElementById("req-notes").value.trim();
+  const photoFiles = Array.from(document.getElementById("req-photos").files || []);
 
   if (!qty || Number(qty) < 1) {
     errBox.textContent = "Enter a valid number of posts.";
@@ -594,14 +789,28 @@ async function submitRequest() {
   }
 
   submitBtn.disabled = true;
-  statusBox.textContent = "Generating drafts — this can take up to a minute…";
   statusBox.style.display = "block";
 
   try {
+    // Resize before the request so a failed photo is reported straight away
+    // rather than after a minute of generation.
+    let uploaded = [];
+    if (photoFiles.length) {
+      statusBox.textContent = "Preparing " + photoFiles.length + " photo(s)…";
+      uploaded = await Promise.all(photoFiles.map(fileToResizedDataURL));
+    }
+    // The model never sees the photos, but it must know the slots will be
+    // filled so it stops writing ASSET NEEDED for them.
+    const assetsNote = uploaded.length
+      ? (assetsAvailable ? assetsAvailable + " — " : "") +
+        uploaded.length + " photo(s) supplied by the requester and attached to these drafts; do not write ASSET NEEDED for the first " + uploaded.length + " photo slot(s)."
+      : assetsAvailable;
+
+    statusBox.textContent = "Generating drafts — this can take up to a minute…";
     const resp = await fetch("/api/generate-posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable, notes }),
+      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable: assetsNote, notes }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -614,6 +823,19 @@ async function submitRequest() {
 
     // New drafts always start as pending and flagged, regardless of what the model set.
     newPosts.forEach((p) => { p.flagged = true; });
+
+    // Hand the uploads to the new drafts, one per photo slot, in order.
+    if (uploaded.length) {
+      let next = 0;
+      for (const post of newPosts) {
+        const slots = photoSlotsFor(post.format);
+        for (const sl of slots) {
+          if (next >= uploaded.length) break;
+          storeAsset(post.id, sl.key, uploaded[next++]);
+        }
+        if (next >= uploaded.length) break;
+      }
+    }
 
     const stored = loadGenerated();
     const updated = stored.concat(newPosts);

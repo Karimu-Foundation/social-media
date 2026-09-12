@@ -372,3 +372,27 @@ button.ghost.danger:hover { border-color: var(--flagged); background: #fbe9e1; }
   font-size: 12.5px; color: var(--muted); background: var(--offwhite);
   border: 1px dashed var(--border); border-radius: 8px; padding: 8px 10px; margin-top: 4px;
 }
+
+
+/* ---- photo uploads ---- */
+.upload-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; flex-wrap: wrap;
+}
+.upload-label { font-weight: 700; font-size: 12px; min-width: 96px; }
+/* A <label> wrapping a hidden file input, made to match button.small — the
+   button rules are element-scoped, so the classes alone would not style it. */
+.upload-btn {
+  position: relative; overflow: hidden; display: inline-block;
+  cursor: pointer; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--offwhite); color: var(--ink);
+  padding: 5px 8px; font-size: 11.5px; font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+.upload-btn:hover { border-color: var(--ink); }
+.upload-btn input[type="file"] {
+  position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+}
+.upload-state { font-size: 11.5px; color: var(--muted); }
+.artwork-note.error { color: var(--flag, #BF4526); }
+.req-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
