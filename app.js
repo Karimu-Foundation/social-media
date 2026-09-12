@@ -154,7 +154,14 @@ function cardHTML(post) {
   const generatedBadge = post.generated ? `<span class="badge ai-drafted">AI-drafted</span>` : "";
   const postedBadge = entry.posted ? `<span class="badge status-posted">Posted</span>` : "";
   const hasImages = post.images && post.images.length > 0;
-  const thumb = hasImages ? `
+  // The kraft artwork is what actually gets published, so it belongs on the
+  // card where the approve/revise decision is made — not only behind "View".
+  const artHTML = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
+  const artSize = artHTML ? KraftRender.sizeFor(post.format) : null;
+  const thumb = artHTML ? `
+    <div class="card-thumb card-thumb-art" style="aspect-ratio:${artSize.w}/${artSize.h}">
+      <div class="thumb-scaler">${artHTML}</div>
+    </div>` : hasImages ? `
     <div class="card-thumb">
       <img src="${post.images[0].thumb}" alt="${escapeHTML(post.images[0].caption || post.title)}" loading="lazy" />
       ${post.images[0].needsConfirmation ? `<span class="badge photo-flag">Photo needs confirmation</span>` : ""}
@@ -211,10 +218,25 @@ function renderPillars() {
   }
 }
 
+// The kraft artwork is authored at a fixed 1080px width while the grid column
+// is fluid, so each thumbnail gets its own zoom. Using zoom (not transform)
+// keeps the scaled card in flow, so it fills the reserved box exactly.
+function sizeArtThumbs() {
+  document.querySelectorAll(".card-thumb-art").forEach((box) => {
+    const scaler = box.querySelector(".thumb-scaler");
+    if (!scaler) return;
+    const w = box.clientWidth;
+    if (w) scaler.style.zoom = String(w / 1080);
+  });
+}
+
 function renderAll() {
   renderOverview();
   renderPillars();
+  sizeArtThumbs();
 }
+
+window.addEventListener("resize", sizeArtThumbs);
 
 // ---- modal ----
 function escapeHTML(str) {

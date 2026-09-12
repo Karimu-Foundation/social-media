@@ -185,12 +185,21 @@
   }
 
   // ---------- page ----------
+  // Every page() call emits its own <style>, and three rules bake in the
+  // card's pixel size (the torn-edge clip-paths). With one card on screen that
+  // was harmless; with a grid of them the last <style> would win and hand every
+  // card the last one's torn edge. Scoping each instance to a unique class
+  // keeps a 1080x1920 Reel from reshaping the 1080x1350 cards around it.
+  let pageSeq = 0;
+
   function page(inner, opts) {
     opts = opts || {};
     const w = opts.w || 1080, h = opts.h || 1350;
     const pad = opts.pad || (h >= 1300 ? "64px 64px 82px" : "56px 56px 62px");
     ensureFonts();
-    const css = CSS
+    const uid = "kp" + (++pageSeq);
+    const CSS_SCOPED = CSS.replace(/\.kraft-root/g, ".kraft-root." + uid);
+    const css = CSS_SCOPED
       .replace(/__TORN__/g, tornPolygon(w, h, 22, 13, opts.seed || 7))
       .replace(/__TORNSM__/g, tornPolygon(600, 600, 22, 6, (opts.seed || 7) + 1))
       .replace(/__NOISE__/g, NOISE)
@@ -198,7 +207,7 @@
       .replace(/__H__/g, String(h))
       .replace(/__PAD__/g, pad);
     return "<style>" + css + "</style>" +
-      "<div class='kraft-root' style='width:" + w + "px;height:" + h + "px'>" +
+      "<div class='kraft-root " + uid + "' style='width:" + w + "px;height:" + h + "px'>" +
       "<div class='paper'></div><div class='grain'></div>" +
       "<div class='pad'>" + inner + "</div></div>";
   }
