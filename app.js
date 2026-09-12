@@ -227,6 +227,21 @@ function openModal(id, focusRevision) {
       ${entry.revisions.map((r) => `<div class="entry"><b>${new Date(r.date).toLocaleString()}:</b> ${escapeHTML(r.note)}</div>`).join("")}
     </div>` : "";
 
+  const artworkHTML = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
+  const artSize = artworkHTML && typeof KraftRender !== "undefined" ? KraftRender.sizeFor(post.format) : null;
+  const tallClass = artSize && artSize.h >= 1900 ? " tall" : "";
+  const artworkSection = artworkHTML ? `
+    <section>
+      <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(kraft template — photo slots are shot briefs until a real photo is dropped in)</span></h4>
+      <div class="artwork-stage">
+        <div class="artwork-scaler${tallClass}" id="artwork-scaler">${artworkHTML}</div>
+      </div>
+      <div class="actions" style="margin-top:10px;">
+        <button class="small" onclick="downloadArtwork('${post.id}')">⬇ Download PNG</button>
+        <span class="artwork-note" id="artwork-note"></span>
+      </div>
+    </section>` : "";
+
   document.getElementById("modal-root").innerHTML = `
   <div class="overlay" id="overlay">
     <div class="modal">
@@ -249,6 +264,8 @@ function openModal(id, focusRevision) {
       </section>
 
       ${shotsTable}
+
+      ${artworkSection}
 
       ${gallery}
 
@@ -287,6 +304,54 @@ function openModal(id, focusRevision) {
   });
   if (focusRevision) {
     setTimeout(() => document.getElementById("revision-note")?.focus(), 50);
+  }
+}
+
+// Export the rendered kraft frame as a PNG at full size (1080px wide).
+// Uses html2canvas, loaded on demand from a CDN.
+function loadHtml2Canvas() {
+  if (window.html2canvas) return Promise.resolve(window.html2canvas);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+    s.onload = () => resolve(window.html2canvas);
+    s.onerror = () => reject(new Error("Could not load the image exporter."));
+    document.head.appendChild(s);
+  });
+}
+
+async function downloadArtwork(id) {
+  const post = POSTS.find((p) => p.id === id);
+  const note = document.getElementById("artwork-note");
+  const scaler = document.getElementById("artwork-scaler");
+  if (!post || !scaler) return;
+  const frame = scaler.querySelector(".kraft-root");
+  if (!frame) return;
+
+  if (note) note.textContent = "Rendering…";
+  try {
+    const html2canvas = await loadHtml2Canvas();
+    // The preview is zoomed down; capture at true 1080px by neutralizing zoom.
+    const prevZoom = scaler.style.zoom;
+    scaler.style.zoom = "1";
+    const canvas = await html2canvas(frame, {
+      backgroundColor: null,
+      scale: 1,
+      useCORS: true,
+      logging: false,
+      width: frame.offsetWidth,
+      height: frame.offsetHeight,
+    });
+    scaler.style.zoom = prevZoom;
+
+    const link = document.createElement("a");
+    const safe = (post.title || "karimu-post").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    link.download = safe + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    if (note) note.textContent = "Saved.";
+  } catch (e) {
+    if (note) note.textContent = "Couldn't export: " + e.message;
   }
 }
 

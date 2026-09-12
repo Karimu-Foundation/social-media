@@ -303,6 +303,23 @@ footer.app-footer {
   .top-actions select, .top-actions input[type="search"] { flex: 1; }
 }
 
+/* Artwork preview — the kraft frame renders at true 1080px, scaled to fit.
+   `zoom` (not `transform: scale`) so the container height shrinks with it. */
+.artwork-stage {
+  overflow: hidden;
+  border-radius: 10px;
+  background: #E9E4D6;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+}
+.artwork-scaler {
+  zoom: 0.34;
+  flex: none;
+}
+.artwork-scaler.tall { zoom: 0.22; }
+.artwork-note { font-size: 12px; color: var(--muted); align-self: center; }
+
 /* AI-drafted badge */
 .badge.ai-drafted { color: var(--terracotta); border-color: var(--terracotta); background: #fbe9e1; }
 
