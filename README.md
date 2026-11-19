@@ -89,6 +89,16 @@ Photos are committed rather than linked from Drive on purpose: Drive URLs would
 taint the canvas and break the PNG export, and would require every viewer to be
 signed into Google.
 
+## Karimu pinned-post carousels ("Posts fixados")
+
+The request form has a **Visual style** picker. *Karimu pinned-post carousel*
+drafts a full carousel (cover, story, numbers, CTA) in the clean style of the
+approved pinned posts, in Portuguese or English, plus the caption. Open the
+post to see every slide, upload photos per slide, **Copy caption + hashtags**,
+and **Download all slides (.zip)**: one 1080×1350 PNG per slide plus the
+caption as a text file, ready for Instagram. The layouts and rules are in
+`knowledge/10-karimu-carousel-style.md`; the renderer is `karimu-kit.js`.
+
 ## Removing posts
 
 Any post can be removed with the 🗑 button on its card or in its modal.

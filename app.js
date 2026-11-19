@@ -65,7 +65,11 @@ function loadAssets() {
 let ASSETS = loadAssets();
 
 // The artwork photo slots each format actually renders — see kraft-render.js.
-function photoSlotsFor(format) {
+function photoSlotsFor(post) {
+  if (typeof KarimuKit !== "undefined" && KarimuKit.isKarimuPost(post)) {
+    return KarimuKit.photoSlots(post);
+  }
+  const format = post.format;
   if (format === "Before / After") {
     return [
       { key: "beforePhotoFile", label: "Before photo" },
@@ -139,7 +143,10 @@ function clearAsset(postId, slotKey) {
 function withAssets(post) {
   const stored = ASSETS[post.id];
   if (!stored || !Object.keys(stored).length) return post;
-  const slots = photoSlotsFor(post.format);
+  if (typeof KarimuKit !== "undefined" && KarimuKit.isKarimuPost(post)) {
+    return KarimuKit.withUploads(post, stored);
+  }
+  const slots = photoSlotsFor(post);
   const merged = Object.assign({}, post);
   if (post.artwork && slots.length) {
     const art = Object.assign({}, post.artwork);
@@ -273,11 +280,13 @@ function cardHTML(post) {
   const hasImages = post.images && post.images.length > 0;
   // The kraft artwork is what actually gets published, so it belongs on the
   // card where the approve/revise decision is made — not only behind "View".
-  const artHTML = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
-  const artSize = artHTML ? KraftRender.sizeFor(post.format) : null;
+  const art = artworkFor(post);
+  const artHTML = art ? art.html : null;
+  const artSize = art ? art.size : null;
+  const slideCount = art && art.slides > 1 ? `<span class="badge slide-count">${art.slides} slides</span>` : "";
   const thumb = artHTML ? `
     <div class="card-thumb card-thumb-art" style="aspect-ratio:${artSize.w}/${artSize.h}">
-      <div class="thumb-scaler">${artHTML}</div>
+      <div class="thumb-scaler">${artHTML}</div>${slideCount}
     </div>` : hasImages ? `
     <div class="card-thumb">
       <img src="${post.images[0].thumb}" alt="${escapeHTML(post.images[0].caption || post.title)}" loading="lazy" />
@@ -307,6 +316,17 @@ function cardHTML(post) {
       <button class="small ghost danger" title="Remove this post" onclick="deletePost('${post.id}')">🗑</button>
     </div>
   </div>`;
+}
+
+// The first frame of a post's artwork, for the card thumbnail. Karimu-style
+// carousels show their cover; kraft posts show their single card.
+function artworkFor(post) {
+  if (typeof KarimuKit !== "undefined" && KarimuKit.isKarimuPost(post)) {
+    const slides = KarimuKit.renderPost(post);
+    return { html: slides[0], size: { w: KarimuKit.W, h: KarimuKit.H }, slides: slides.length };
+  }
+  const html = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
+  return html ? { html, size: KraftRender.sizeFor(post.format), slides: 1 } : null;
 }
 
 function renderPillars() {
@@ -396,10 +416,11 @@ function openModal(id, focusRevision) {
       ${entry.revisions.map((r) => `<div class="entry"><b>${new Date(r.date).toLocaleString()}:</b> ${escapeHTML(r.note)}</div>`).join("")}
     </div>` : "";
 
-  const artworkHTML = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
+  const isKarimu = typeof KarimuKit !== "undefined" && KarimuKit.isKarimuPost(post);
+  const artworkHTML = isKarimu ? null : ((typeof KraftRender !== "undefined" && KraftRender.render(post)) || null);
   const artSize = artworkHTML && typeof KraftRender !== "undefined" ? KraftRender.sizeFor(post.format) : null;
   const tallClass = artSize && artSize.h >= 1900 ? " tall" : "";
-  const artworkSection = artworkHTML ? `
+  const artworkSection = isKarimu ? karimuArtworkSection(post) : artworkHTML ? `
     <section>
       <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(kraft template — photo slots are shot briefs until a real photo is dropped in)</span></h4>
       <div class="artwork-stage">
@@ -413,7 +434,7 @@ function openModal(id, focusRevision) {
 
   // Photo slots the team can fill themselves. Uploads are per-browser, like
   // approvals, and always land flagged for consent review.
-  const slots = photoSlotsFor(post.format);
+  const slots = photoSlotsFor(post);
   const storedForPost = ASSETS[post.id] || {};
   let uploadBody;
   if (slots.length) {
@@ -469,7 +490,11 @@ function openModal(id, focusRevision) {
 
       <section>
         <h4>Copy</h4>
-        <div class="copy-block">${escapeHTML(post.copy)}</div>
+        <div class="copy-block" id="copy-block">${escapeHTML(post.copy)}</div>
+        <div class="actions" style="margin-top:8px;">
+          <button class="small" onclick="copyCaption('${post.id}')">📋 Copy caption + hashtags</button>
+          <span class="artwork-note" id="copy-note"></span>
+        </div>
       </section>
 
       ${shotsTable}
@@ -593,6 +618,133 @@ async function downloadArtwork(id) {
   }
 }
 
+// ---- Karimu-style carousels ----
+function karimuArtworkSection(post) {
+  const slides = KarimuKit.renderPost(post);
+  const strip = slides.map((html, i) => `
+    <figure class="kk-slide">
+      <div class="kk-slide-box"><div class="kk-slide-scaler">${html}</div></div>
+      <figcaption>
+        <span>${i + 1} / ${slides.length} · ${escapeHTML(post.slides[i].layout || "")}</span>
+        <button class="small ghost" onclick="downloadSlide('${post.id}', ${i})">⬇ PNG</button>
+      </figcaption>
+    </figure>`).join("");
+  return `
+    <section>
+      <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(Karimu pinned-post style · ${slides.length} slide${slides.length === 1 ? "" : "s"} · 1080×1350 — dashed boxes are photos still to be sourced)</span></h4>
+      <div class="kk-strip">${strip}</div>
+      <div class="actions" style="margin-top:10px;">
+        <button class="small primary" onclick="downloadAllSlides('${post.id}')">⬇ Download all slides (.zip)</button>
+        <span class="artwork-note" id="artwork-note"></span>
+      </div>
+    </section>`;
+}
+
+function slugify(text) {
+  return (text || "karimu-post").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "karimu-post";
+}
+
+// Render one slide off-screen at true size and rasterise it. Rendering a
+// fresh copy (instead of the zoomed preview) keeps html2canvas away from the
+// preview's zoom and gives an exact 1080x1350 PNG.
+async function captureKarimuSlide(post, index) {
+  const html2canvas = await loadHtml2Canvas();
+  const host = document.createElement("div");
+  host.style.cssText = "position:fixed;left:-20000px;top:0;width:1080px;height:1350px;z-index:-1";
+  host.innerHTML = KarimuKit.renderPost(post)[index];
+  document.body.appendChild(host);
+  try {
+    if (document.fonts && document.fonts.ready) await document.fonts.ready;
+    const frame = host.querySelector(".kk-root");
+    // Wait for the slide's photos (background images) to be decoded.
+    const urls = [];
+    frame.querySelectorAll("[style*='url(']").forEach((el) => {
+      const m = /url\(["']?([^"')]+)["']?\)/.exec(el.getAttribute("style"));
+      if (m) urls.push(m[1]);
+    });
+    frame.querySelectorAll("img").forEach((img) => urls.push(img.src));
+    await Promise.all(urls.map((u) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = res; im.src = u; })));
+    return await html2canvas(frame, { backgroundColor: "#ffffff", scale: 1, useCORS: true, logging: false, width: 1080, height: 1350 });
+  } finally {
+    host.remove();
+  }
+}
+
+async function downloadSlide(id, index) {
+  const base = POSTS.find((p) => p.id === id);
+  const note = document.getElementById("artwork-note");
+  if (!base) return;
+  const post = withAssets(base);
+  if (note) note.textContent = "Rendering slide " + (index + 1) + "…";
+  try {
+    const canvas = await captureKarimuSlide(post, index);
+    const link = document.createElement("a");
+    link.download = slugify(post.title) + "-" + String(index + 1).padStart(2, "0") + ".png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+    if (note) note.textContent = "Saved.";
+  } catch (e) {
+    if (note) note.textContent = "Couldn't export: " + e.message;
+  }
+}
+
+function loadJSZip() {
+  if (window.JSZip) return Promise.resolve(window.JSZip);
+  return new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+    s.onload = () => resolve(window.JSZip);
+    s.onerror = () => reject(new Error("Could not load the zip library."));
+    document.head.appendChild(s);
+  });
+}
+
+// Every slide as PNG plus the caption, in one zip ready for Instagram.
+async function downloadAllSlides(id) {
+  const base = POSTS.find((p) => p.id === id);
+  const note = document.getElementById("artwork-note");
+  if (!base) return;
+  const post = withAssets(base);
+  try {
+    const JSZip = await loadJSZip();
+    const zip = new JSZip();
+    const slug = slugify(post.title);
+    for (let i = 0; i < post.slides.length; i++) {
+      if (note) note.textContent = "Rendering slide " + (i + 1) + " of " + post.slides.length + "…";
+      const canvas = await captureKarimuSlide(post, i);
+      zip.file(slug + "-" + String(i + 1).padStart(2, "0") + ".png", canvas.toDataURL("image/png").split(",")[1], { base64: true });
+    }
+    zip.file(slug + "-caption.txt", captionText(post));
+    const blob = await zip.generateAsync({ type: "blob" });
+    const link = document.createElement("a");
+    link.download = slug + ".zip";
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(link.href), 5000);
+    if (note) note.textContent = "Saved " + post.slides.length + " slides + caption.";
+  } catch (e) {
+    if (note) note.textContent = "Couldn't export: " + e.message;
+  }
+}
+
+function captionText(post) {
+  const tags = (post.hashtags || []).join(" ");
+  return (post.copy || "") + (tags ? "\n\n" + tags : "");
+}
+
+async function copyCaption(id) {
+  const post = POSTS.find((p) => p.id === id);
+  const note = document.getElementById("copy-note");
+  if (!post) return;
+  try {
+    await navigator.clipboard.writeText(captionText(post));
+    if (note) note.textContent = "Copied.";
+  } catch (e) {
+    if (note) note.textContent = "Couldn't copy — select the text above instead.";
+  }
+}
+
 function submitRevision(id) {
   const note = document.getElementById("revision-note").value.trim();
   if (!note) {
@@ -679,6 +831,37 @@ function openRequestModal() {
         </div>
 
         <div class="field-row">
+          <label>Visual style
+            <select id="req-style" onchange="onRequestStyleChange()">
+              <option value="karimu">Karimu pinned-post carousel (Posts fixados)</option>
+              <option value="kraft">Kraft / scrapbook (current feed)</option>
+            </select>
+          </label>
+          <div class="req-hint" id="req-style-hint">Clean blue/white slides with eyebrow, headline, stats and logo footer, rendered as 1080×1350 PNGs plus a caption.</div>
+        </div>
+
+        <div class="field-row" id="req-karimu-opts">
+          <label>Language
+            <select id="req-language">
+              <option value="pt-BR">Português (Brasil)</option>
+              <option value="en-US">English (US)</option>
+            </select>
+          </label>
+          <label>Slides per carousel
+            <select id="req-slides">
+              <option value="">Let the agent choose (5–7)</option>
+              <option value="1">1 (single post)</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="field-row">
           <label>Content pillar
             <select id="req-pillar">
               <option value="">Let the agent choose</option>
@@ -687,7 +870,7 @@ function openRequestModal() {
           </label>
         </div>
 
-        <div class="field-row">
+        <div class="field-row" id="req-format-row" style="display:none;">
           <label>Post format
             <select id="req-format">
               <option value="">Let the agent choose (uses the decision table)</option>
@@ -762,6 +945,23 @@ function openRequestModal() {
   document.getElementById("request-overlay").addEventListener("click", (e) => {
     if (e.target.id === "request-overlay") closeRequestModal();
   });
+  onRequestStyleChange();
+}
+
+// The pinned-post style is always a carousel, so the kraft format picker only
+// makes sense for the kraft style, and language / slide count only for Karimu.
+function onRequestStyleChange() {
+  const style = document.getElementById("req-style").value;
+  document.getElementById("req-format-row").style.display = style === "kraft" ? "" : "none";
+  document.getElementById("req-karimu-opts").style.display = style === "karimu" ? "" : "none";
+  // A carousel is several times longer than a kraft card; the API drafts at
+  // most 2 per request so it finishes inside Vercel's 60-second limit.
+  const qty = document.getElementById("req-qty");
+  qty.max = style === "karimu" ? "2" : "10";
+  if (style === "karimu" && Number(qty.value) > 2) qty.value = "1";
+  document.getElementById("req-style-hint").textContent = style === "karimu"
+    ? "Clean blue/white slides with eyebrow, headline, stats and logo footer, rendered as 1080×1350 PNGs plus a caption."
+    : "Torn kraft paper, brush banners and script notes — the format picker below chooses the card type.";
 }
 
 async function submitRequest() {
@@ -774,7 +974,10 @@ async function submitRequest() {
   const qty = document.getElementById("req-qty").value;
   const channels = Array.from(document.querySelectorAll('#req-channels input[type="checkbox"]:checked')).map((el) => el.value);
   const pillar = document.getElementById("req-pillar").value;
-  const format = document.getElementById("req-format").value;
+  const style = document.getElementById("req-style").value;
+  const format = style === "kraft" ? document.getElementById("req-format").value : "";
+  const language = document.getElementById("req-language").value;
+  const slideCount = document.getElementById("req-slides").value;
   const funnelStage = document.getElementById("req-funnel").value;
   const dateRange = document.getElementById("req-daterange").value.trim();
   const topic = document.getElementById("req-topic").value.trim();
@@ -810,7 +1013,7 @@ async function submitRequest() {
     const resp = await fetch("/api/generate-posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable: assetsNote, notes }),
+      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable: assetsNote, notes, style, language, slideCount }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -828,7 +1031,7 @@ async function submitRequest() {
     if (uploaded.length) {
       let next = 0;
       for (const post of newPosts) {
-        const slots = photoSlotsFor(post.format);
+        const slots = photoSlotsFor(post);
         for (const sl of slots) {
           if (next >= uploaded.length) break;
           storeAsset(post.id, sl.key, uploaded[next++]);
