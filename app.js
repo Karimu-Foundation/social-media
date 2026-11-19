@@ -233,13 +233,54 @@ function addRevisionNote(id, note) {
   openModal(id); // keep modal open, refreshed
 }
 
+// ---- languages ----
+// Karimu carousels can carry a Portuguese and an English version of the same
+// slides: `language` is the version the post was drafted in, `versions` holds
+// the other one(s) as { "en-US": { title, copy, cta, hashtags, altText, slides } }.
+// Photos, layouts and approval state are shared by every version.
+// Kraft and seed posts are English only.
+const LANGS = { "pt-BR": { short: "PT", name: "Português" }, "en-US": { short: "EN", name: "English" } };
+
+function langOf(post) {
+  if (post.language && LANGS[post.language]) return post.language;
+  return post.style === "karimu" ? "pt-BR" : "en-US";
+}
+
+function languagesOf(post) {
+  return [langOf(post)].concat(Object.keys(post.versions || {}).filter((l) => LANGS[l] && l !== langOf(post)));
+}
+
+function inLanguage(post, lang) {
+  if (!lang || lang === langOf(post) || !(post.versions && post.versions[lang])) return post;
+  const v = post.versions[lang];
+  return Object.assign({}, post, {
+    title: v.title || post.title,
+    copy: v.copy || post.copy,
+    cta: v.cta || post.cta,
+    hashtags: v.hashtags || post.hashtags,
+    altText: v.altText || post.altText,
+    slides: v.slides || post.slides,
+    language: lang,
+  });
+}
+
+// The version a card shows: the language filter's, when the post has it.
+function displayLanguage(post) {
+  return filters.language !== "all" && languagesOf(post).includes(filters.language) ? filters.language : langOf(post);
+}
+
+function otherLanguage(lang) {
+  return lang === "en-US" ? "pt-BR" : "en-US";
+}
+
 // ---- filters ----
-let filters = { channel: "all", status: "all", search: "" };
+let filters = { channel: "all", status: "all", search: "", language: "all" };
 
 function matchesFilters(post) {
   const entry = getEntry(post.id);
   if (filters.channel !== "all" && !post.channels.includes(filters.channel)) return false;
   if (filters.status !== "all" && entry.status !== filters.status) return false;
+  if (filters.language !== "all" && !languagesOf(post).includes(filters.language)) return false;
   if (filters.search) {
     const hay = (post.title + " " + post.copy + " " + post.program).toLowerCase();
     if (!hay.includes(filters.search.toLowerCase())) return false;
@@ -271,11 +312,15 @@ function statusBadge(status) {
 }
 
 function cardHTML(post) {
-  post = withAssets(post);
+  const langs = languagesOf(post);
+  post = withAssets(inLanguage(post, displayLanguage(post)));
   const entry = getEntry(post.id);
   const channelBadges = post.channels.map((c) => `<span class="badge channel">${c}</span>`).join("");
   const flaggedBadge = post.flagged ? `<span class="badge flag">Needs sign-off</span>` : "";
   const generatedBadge = post.generated ? `<span class="badge ai-drafted">AI-drafted</span>` : "";
+  const langBadge = post.style === "karimu"
+    ? `<span class="badge lang">${langs.map((l) => LANGS[l].short).join(" · ")}</span>`
+    : "";
   const postedBadge = entry.posted ? `<span class="badge status-posted">Posted</span>` : "";
   const hasImages = post.images && post.images.length > 0;
   // The kraft artwork is what actually gets published, so it belongs on the
@@ -303,6 +348,7 @@ function cardHTML(post) {
       ${channelBadges}
       ${flaggedBadge}
       ${generatedBadge}
+      ${langBadge}
       ${postedBadge}
     </div>
     <h3>${escapeHTML(post.title)}</h3>
@@ -382,8 +428,18 @@ function escapeHTML(str) {
   }[c]));
 }
 
-function openModal(id, focusRevision) {
-  const basePost = POSTS.find((p) => p.id === id);
+// The language tab each open post shows, remembered while the page is open.
+const MODAL_LANG = {};
+
+function modalLanguage(post) {
+  const l = MODAL_LANG[post.id];
+  return l && languagesOf(post).includes(l) ? l : displayLanguage(post);
+}
+
+function openModal(id, focusRevision, lang) {
+  const rawPost = POSTS.find((p) => p.id === id);
+  if (lang) MODAL_LANG[id] = lang;
+  const basePost = rawPost ? inLanguage(rawPost, modalLanguage(rawPost)) : null;
   if (!basePost) return;
   const post = withAssets(basePost);
   const entry = getEntry(id);
@@ -483,6 +539,7 @@ function openModal(id, focusRevision) {
             ${post.flagged ? `<span class="badge flag">Needs sign-off</span>` : ""}
           </div>
           <h2>${escapeHTML(post.title)}</h2>
+          ${languageTabs(rawPost)}
           <div class="meta">${post.pillar} · ${post.format} · Funnel: ${post.funnelStage} · Persona: ${escapeHTML(post.persona)}</div>
         </div>
         <button class="close-btn" onclick="closeModal()">✕</button>
@@ -634,10 +691,62 @@ function karimuArtworkSection(post) {
       <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(Karimu pinned-post style · ${slides.length} slide${slides.length === 1 ? "" : "s"} · 1080×1350 — dashed boxes are photos still to be sourced)</span></h4>
       <div class="kk-strip">${strip}</div>
       <div class="actions" style="margin-top:10px;">
-        <button class="small primary" onclick="downloadAllSlides('${post.id}')">⬇ Download all slides (.zip)</button>
+        <button class="small primary" onclick="downloadAllSlides('${post.id}')">⬇ Download all slides (.zip${languagesOf(POSTS.find((p) => p.id === post.id) || post).length > 1 ? ", PT + EN" : ""})</button>
         <span class="artwork-note" id="artwork-note"></span>
       </div>
     </section>`;
+}
+
+// Language tabs for a Karimu carousel, plus a button that creates the
+// missing version through /api/translate-post.
+function languageTabs(raw) {
+  if (!raw || raw.style !== "karimu") return "";
+  const current = modalLanguage(raw);
+  const langs = languagesOf(raw);
+  const tabs = langs.map((l) =>
+    `<button class="lang-tab${l === current ? " active" : ""}" onclick="openModal('${raw.id}', false, '${l}')">${LANGS[l].name}</button>`).join("");
+  const missing = Object.keys(LANGS).filter((l) => !langs.includes(l));
+  const add = missing.map((l) =>
+    `<button class="lang-tab add" id="translate-btn" onclick="createTranslation('${raw.id}', '${l}')">+ Create ${LANGS[l].name} version</button>`).join("");
+  return `<div class="lang-tabs">${tabs}${add}<span class="artwork-note" id="translate-note"></span></div>`;
+}
+
+// Ask the server for the other-language version of a generated carousel and
+// store it on the post. The source post is sent without uploads: photos are
+// shared between versions and never leave the browser.
+async function requestTranslation(post, to) {
+  const resp = await fetch("/api/translate-post", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ post, to }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || "The translator returned an error.");
+  return data.version;
+}
+
+function saveVersion(post, lang, version) {
+  post.versions = Object.assign({}, post.versions, { [lang]: version });
+  if (post.generated) {
+    saveGenerated(loadGenerated().map((p) => (p.id === post.id ? post : p)));
+  }
+}
+
+async function createTranslation(id, to) {
+  const post = POSTS.find((p) => p.id === id);
+  const note = document.getElementById("translate-note");
+  const btn = document.getElementById("translate-btn");
+  if (!post) return;
+  if (btn) btn.disabled = true;
+  if (note) { note.textContent = "Writing the " + LANGS[to].name + " version — up to a minute…"; note.classList.remove("error"); }
+  try {
+    saveVersion(post, to, await requestTranslation(post, to));
+    renderAll();
+    openModal(id, false, to);
+  } catch (e) {
+    if (note) { note.textContent = "Couldn't translate: " + e.message; note.classList.add("error"); }
+    if (btn) btn.disabled = false;
+  }
 }
 
 function slugify(text) {
@@ -671,16 +780,21 @@ async function captureKarimuSlide(post, index) {
   }
 }
 
+// The post as the modal currently shows it: chosen language + uploads.
+function postForModal(id) {
+  const raw = POSTS.find((p) => p.id === id);
+  return raw ? withAssets(inLanguage(raw, modalLanguage(raw))) : null;
+}
+
 async function downloadSlide(id, index) {
-  const base = POSTS.find((p) => p.id === id);
+  const post = postForModal(id);
   const note = document.getElementById("artwork-note");
-  if (!base) return;
-  const post = withAssets(base);
+  if (!post) return;
   if (note) note.textContent = "Rendering slide " + (index + 1) + "…";
   try {
     const canvas = await captureKarimuSlide(post, index);
     const link = document.createElement("a");
-    link.download = slugify(post.title) + "-" + String(index + 1).padStart(2, "0") + ".png";
+    link.download = slugify(post.title) + "-" + LANGS[langOf(post)].short.toLowerCase() + "-" + String(index + 1).padStart(2, "0") + ".png";
     link.href = canvas.toDataURL("image/png");
     link.click();
     if (note) note.textContent = "Saved.";
@@ -700,29 +814,37 @@ function loadJSZip() {
   });
 }
 
-// Every slide as PNG plus the caption, in one zip ready for Instagram.
+// Every slide as PNG plus the caption, ready for Instagram. A post with both
+// languages gets one folder per language (pt/, en/) in the same zip.
 async function downloadAllSlides(id) {
-  const base = POSTS.find((p) => p.id === id);
+  const raw = POSTS.find((p) => p.id === id);
   const note = document.getElementById("artwork-note");
-  if (!base) return;
-  const post = withAssets(base);
+  if (!raw) return;
   try {
     const JSZip = await loadJSZip();
     const zip = new JSZip();
-    const slug = slugify(post.title);
-    for (let i = 0; i < post.slides.length; i++) {
-      if (note) note.textContent = "Rendering slide " + (i + 1) + " of " + post.slides.length + "…";
-      const canvas = await captureKarimuSlide(post, i);
-      zip.file(slug + "-" + String(i + 1).padStart(2, "0") + ".png", canvas.toDataURL("image/png").split(",")[1], { base64: true });
+    const langs = languagesOf(raw);
+    const slug = slugify(withAssets(inLanguage(raw, langOf(raw))).title);
+    let count = 0;
+    for (const lang of langs) {
+      const post = withAssets(inLanguage(raw, lang));
+      const short = LANGS[lang].short.toLowerCase();
+      const folder = langs.length > 1 ? zip.folder(short) : zip;
+      for (let i = 0; i < post.slides.length; i++) {
+        if (note) note.textContent = "Rendering " + LANGS[lang].short + " slide " + (i + 1) + " of " + post.slides.length + "…";
+        const canvas = await captureKarimuSlide(post, i);
+        folder.file(slug + "-" + short + "-" + String(i + 1).padStart(2, "0") + ".png", canvas.toDataURL("image/png").split(",")[1], { base64: true });
+        count++;
+      }
+      folder.file(slug + "-" + short + "-caption.txt", captionText(post));
     }
-    zip.file(slug + "-caption.txt", captionText(post));
     const blob = await zip.generateAsync({ type: "blob" });
     const link = document.createElement("a");
     link.download = slug + ".zip";
     link.href = URL.createObjectURL(blob);
     link.click();
     setTimeout(() => URL.revokeObjectURL(link.href), 5000);
-    if (note) note.textContent = "Saved " + post.slides.length + " slides + caption.";
+    if (note) note.textContent = "Saved " + count + " slides + caption" + (langs.length > 1 ? "s in " + langs.map((l) => LANGS[l].short).join(" and ") : "") + ".";
   } catch (e) {
     if (note) note.textContent = "Couldn't export: " + e.message;
   }
@@ -734,7 +856,7 @@ function captionText(post) {
 }
 
 async function copyCaption(id) {
-  const post = POSTS.find((p) => p.id === id);
+  const post = postForModal(id);
   const note = document.getElementById("copy-note");
   if (!post) return;
   try {
@@ -792,6 +914,8 @@ function initFilters() {
   channelSel.addEventListener("change", () => { filters.channel = channelSel.value; renderPillars(); });
   statusSel.addEventListener("change", () => { filters.status = statusSel.value; renderPillars(); });
   search.addEventListener("input", () => { filters.search = search.value; renderPillars(); });
+  const langSel = document.getElementById("filter-language");
+  if (langSel) langSel.addEventListener("change", () => { filters.language = langSel.value; renderPillars(); sizeArtThumbs(); });
 }
 
 // ---- request new posts ----
@@ -843,6 +967,7 @@ function openRequestModal() {
         <div class="field-row" id="req-karimu-opts">
           <label>Language
             <select id="req-language">
+              <option value="both">Português + English (both)</option>
               <option value="pt-BR">Português (Brasil)</option>
               <option value="en-US">English (US)</option>
             </select>
@@ -1027,6 +1152,22 @@ async function submitRequest() {
     // New drafts always start as pending and flagged, regardless of what the model set.
     newPosts.forEach((p) => { p.flagged = true; });
 
+    // Both languages: the generator wrote Portuguese, now get the English
+    // version of each carousel. A failed translation keeps the post; the
+    // modal offers "+ Create English version" to retry.
+    const translateFailures = [];
+    if (style === "karimu" && language === "both") {
+      for (let i = 0; i < newPosts.length; i++) {
+        const p = newPosts[i];
+        statusBox.textContent = "Writing the English version" + (newPosts.length > 1 ? " of carousel " + (i + 1) + " of " + newPosts.length : "") + "…";
+        try {
+          saveVersion(p, otherLanguage(langOf(p)), await requestTranslation(p, otherLanguage(langOf(p))));
+        } catch (e) {
+          translateFailures.push(p.title);
+        }
+      }
+    }
+
     // Hand the uploads to the new drafts, one per photo slot, in order.
     if (uploaded.length) {
       let next = 0;
@@ -1049,6 +1190,9 @@ async function submitRequest() {
 
     closeRequestModal();
     renderAll();
+    if (translateFailures.length) {
+      alert("The English version could not be written for: " + translateFailures.join(", ") + ".\n\nOpen the post and use \"+ Create English version\" to try again.");
+    }
   } catch (e) {
     statusBox.style.display = "none";
     errBox.textContent = "Couldn't generate drafts: " + e.message;

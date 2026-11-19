@@ -416,3 +416,11 @@ button.ghost.danger:hover { border-color: var(--flagged); background: #fbe9e1; }
 .badge.slide-count { position: absolute; right: 8px; bottom: 8px; background: rgba(43,91,126,.92); color: #fff; border-color: transparent; }
 #req-karimu-opts { display: flex; gap: 14px; flex-wrap: wrap; }
 #req-karimu-opts label { flex: 1; min-width: 180px; }
+
+/* Language versions (Karimu carousels: PT + EN) */
+.badge.lang { color: #2B5B7E; border-color: #2B5B7E; background: #EEF3F9; }
+.lang-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.lang-tab { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid #C9D3DF; background: #fff; color: #2B5B7E; cursor: pointer; }
+.lang-tab.active { background: #2B5B7E; border-color: #2B5B7E; color: #fff; }
+.lang-tab.add { border-style: dashed; color: var(--muted); }
+.lang-tab:disabled { opacity: .6; cursor: progress; }

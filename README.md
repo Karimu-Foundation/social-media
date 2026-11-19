@@ -99,6 +99,15 @@ and **Download all slides (.zip)**: one 1080×1350 PNG per slide plus the
 caption as a text file, ready for Instagram. The layouts and rules are in
 `knowledge/10-karimu-carousel-style.md`; the renderer is `karimu-kit.js`.
 
+Each carousel can have a **Portuguese and an English version** of the same
+slides. *Português + English* is the default in the request form: the
+Portuguese version is drafted first and the English one is written right
+after, with the same layouts, photos and figures. Use the **language filter**
+in the header to see the queue in one language, the **Português / English**
+tabs in a post to switch versions, and **+ Create English version** (or
+Portuguese) to add a missing one later. The zip download holds both versions
+in `pt/` and `en/` folders. One approval covers both versions.
+
 ## Removing posts
 
 Any post can be removed with the 🗑 button on its card or in its modal.

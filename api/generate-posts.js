@@ -11,6 +11,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { callClaude, parseJSON } = require("../lib/anthropic");
 
 const KNOWLEDGE_FILES = [
   "SYSTEM_PROMPT.md",
@@ -277,7 +278,7 @@ function resolvePhotos(obj, photoById) {
   });
 }
 
-function stampKarimu(p, i, photoById) {
+function stampKarimu(p, i, photoById, language) {
   const slides = (Array.isArray(p.slides) ? p.slides : []).slice(0, 10).map((s) => {
     const slide = Object.assign({}, s);
     if (!KARIMU_LAYOUTS.includes(slide.layout)) slide.layout = "photo-text";
@@ -298,6 +299,8 @@ function stampKarimu(p, i, photoById) {
     ...p,
     style: "karimu",
     format: "Karimu carousel",
+    language,
+    versions: {},
     slides,
     hashtags: Array.isArray(p.hashtags) ? p.hashtags : [],
     channels: Array.isArray(p.channels) && p.channels.length ? p.channels : ["Instagram"],
@@ -329,14 +332,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({
-      error: "ANTHROPIC_API_KEY is not configured on this deployment. Add it in the Vercel project's Environment Variables settings.",
-    });
-    return;
-  }
-
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -359,6 +354,9 @@ module.exports = async (req, res) => {
   } = body;
 
   const isKarimu = style === "karimu";
+  // "both" drafts the Portuguese version here; the browser then asks
+  // /api/translate-post for the English one, so each call stays under 60s.
+  const draftLanguage = language === "en-US" ? "en-US" : "pt-BR";
   // Carousels are several times longer than a kraft card, and the function
   // has 60 seconds, so the pinned-post style drafts at most 2 per request.
   const qty = Math.max(1, Math.min(isKarimu ? 2 : 10, parseInt(quantity, 10) || 3));
@@ -374,7 +372,7 @@ New content request from the social media team:
 - Number of posts requested: ${qty}
 - Channel(s): ${channels.length ? channels.join(", ") : "agent's choice, pick what fits the topic"}
 - Content pillar: ${pillar || "agent's choice — pick the best-fitting pillar(s) from 05-content-pillars.md"}
-- Visual style: ${isKarimu ? `Karimu pinned-post carousel, ${slidesWanted ? slidesWanted + " slide(s)" : "5–7 slides"}, written in ${language === "en-US" ? "US English" : "Brazilian Portuguese"}` : "kraft / scrapbook"}
+- Visual style: ${isKarimu ? `Karimu pinned-post carousel, ${slidesWanted ? slidesWanted + " slide(s)" : "5–7 slides"}, written in ${draftLanguage === "en-US" ? "US English" : "Brazilian Portuguese"}` : "kraft / scrapbook"}
 - Post format: ${isKarimu ? "Karimu carousel" : format || "agent's choice — use the decision table in post-formats.md, and remember the feed is video-first (do not default to a carousel)"}
 - Funnel stage: ${funnelStage || "mixed — vary across Attract/Trust/Act as fits"}
 - Target publish window: ${dateRange || "not specified"}
@@ -385,68 +383,29 @@ New content request from the social media team:
 
   const systemPrompt = `You are the Karimu Comms Agent, the in-house content specialist for Karimu International Help Foundation. Ground every draft strictly in the following knowledge base. Do not use any fact, name, or figure that isn't in it.
 ${knowledge}
-${isKarimu ? karimuSchemaInstructions(photos, language, slidesWanted) : schemaInstructions(photos)}`;
-
-  // Org-level (unscoped) API keys must name a workspace explicitly. Set
-  // ANTHROPIC_WORKSPACE_ID in the Vercel environment variables if your key
-  // isn't already scoped to a workspace; leave it unset if it is.
-  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
-
-  const anthropicHeaders = {
-    "Content-Type": "application/json",
-    "x-api-key": apiKey,
-    "anthropic-version": "2023-06-01",
-  };
-  if (workspaceId) {
-    anthropicHeaders["anthropic-workspace-id"] = workspaceId;
-  }
+${isKarimu ? karimuSchemaInstructions(photos, draftLanguage, slidesWanted) : schemaInstructions(photos)}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: anthropicHeaders,
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        // Sonnet 5 runs adaptive thinking by default, and thinking tokens come
-        // out of max_tokens — 4000 (the Sonnet 4.6 value) truncates the JSON
-        // mid-post once reasoning is in the budget.
-        max_tokens: 16000,
-        // Drafting from a fixed knowledge base does not need deep reasoning,
-        // and Vercel's Hobby plan caps a function at 60s. Measured on a
-        // 2-3 post request: "high" (the default) 2m33s, "medium" 51s,
-        // "low" 30s with no loss in draft quality or guardrail compliance.
-        output_config: { effort: "low" },
-        system: systemPrompt,
-        messages: [{ role: "user", content: requestBrief }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      res.status(502).json({ error: `Anthropic API error: ${response.status} ${errText}` });
+    let text;
+    try {
+      text = await callClaude({ system: systemPrompt, user: requestBrief });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
       return;
     }
 
-    const data = await response.json();
-    const textBlocks = (data.content || [])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
-
-    const cleaned = textBlocks.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-
     let posts;
     try {
-      posts = JSON.parse(cleaned);
+      posts = parseJSON(text);
     } catch (e) {
-      res.status(502).json({ error: "Could not parse the generated posts as JSON.", raw: cleaned });
+      res.status(502).json({ error: "Could not parse the generated posts as JSON.", raw: text });
       return;
     }
 
     if (!Array.isArray(posts)) posts = [posts];
 
     const stamped = posts.map((p, i) => {
-      if (isKarimu) return stampKarimu(p, i, photoById);
+      if (isKarimu) return stampKarimu(p, i, photoById, draftLanguage);
       const art = p.artwork || {};
       // Resolve photo ids against the real library. Anything the model made up
       // is dropped rather than rendered as a broken image.

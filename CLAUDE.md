@@ -52,9 +52,19 @@ Static site + one serverless function. No build step; Vercel zero-config.
   slots are keyed `s<slide>.<path>`, e.g. `s3.rows.1.beforePhotoFile`.
   Logos: `images/logo-h.png` (light slides) and `images/logo-h-white.png`
   (dark slides), cut from the approved deck.
-- The generator takes `style` (`kraft` | `karimu`), `language` (`pt-BR` |
-  `en-US`) and `slideCount`. Karimu requests are capped at 2 posts so the
-  60-second function limit holds.
+- The generator takes `style` (`kraft` | `karimu`), `language` (`both` |
+  `pt-BR` | `en-US`) and `slideCount`. Karimu requests are capped at 2 posts
+  so the 60-second function limit holds.
+- **Bilingual carousels.** A Karimu post has `language` (the version it was
+  drafted in) and `versions: { "en-US": { title, copy, cta, hashtags,
+  altText, slides } }` for the other one. With `language: "both"` the
+  generator drafts Portuguese and the browser then calls
+  `api/translate-post.js` for English (a second call, so each stays under
+  60s). The translator only replaces strings: layouts, themes, colours, icons
+  and photos are copied from the source server-side. Photos, uploads and
+  approval state are shared by both versions. `lib/anthropic.js` holds the
+  shared API call. The header's language filter shows each card in that
+  language; kraft and seed posts count as English.
 - `photo-index.json` + `images/library/` — curated photos pulled from the
   Karimu shared Drive, resized. Committed to the repo on purpose: rendering
   from Drive URLs would break the PNG export (tainted canvas / CORS).

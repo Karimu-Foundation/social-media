@@ -153,6 +153,17 @@
     document.head.appendChild(style);
   }
 
+  // ---------- built-in labels, per language ----------
+  // Text the layouts supply themselves when a slide leaves it empty. Set per
+  // slide from the post's language (see slide()).
+  const STRINGS = {
+    "pt-BR": { swipe: "Arraste", linkInBio: "Link na bio", nextPinned: "Próximo post fixado", before: "Antes", after: "Depois",
+      today: "Hoje", pinned: "Post fixado", photoNeeded: "Foto necessária", briefDefault: "Descreva a foto que precisa ser escolhida." },
+    "en-US": { swipe: "Swipe", linkInBio: "Link in bio", nextPinned: "Next pinned post", before: "Before", after: "After",
+      today: "Today", pinned: "Pinned post", photoNeeded: "Photo needed", briefDefault: "Describe the photo that still needs to be chosen." },
+  };
+  let T = STRINGS["pt-BR"];
+
   // ---------- building blocks ----------
   const LOGO = "images/logo-h.png";
   const LOGO_WHITE = "images/logo-h-white.png";
@@ -171,8 +182,8 @@
     // upload panel and in the post's visual notes.
     const small = h < 240;
     return "<div class='kk-ph' style='" + w + "height:" + h + "px;" + r + "border-color:" + border + ";background:" + bg + ";color:" + t.muted + ";position:relative" + (small ? ";justify-content:flex-end;padding:14px" : "") + "'>" + chip +
-      "<b style='color:" + (t.dark ? C.yellow : C.rust) + (small ? ";font-size:15px;margin:0" : "") + "'>Foto necessária</b>" +
-      (small ? "" : "<span>" + esc(brief || "Descreva a foto que precisa ser escolhida.") + "</span>") + "</div>";
+      "<b style='color:" + (t.dark ? C.yellow : C.rust) + (small ? ";font-size:15px;margin:0" : "") + "'>" + esc(T.photoNeeded) + "</b>" +
+      (small ? "" : "<span>" + esc(brief || T.briefDefault) + "</span>") + "</div>";
   }
 
   function head(a, t, ctx) {
@@ -223,7 +234,7 @@
     const bar = ["#4A8BD0", "#6DB33F", "#8B6FC1", C.orange, "#52AE5E"].map(c => "<div style='flex:1;background:" + c + "'></div>").join("");
     const badge = a.badge === "" ? "" :
       "<div style='position:absolute;top:56px;left:64px;background:#fff;border-radius:999px;padding:14px 26px 14px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,.12)'>" +
-      icon("pin", C.rust, 28, 2.2) + "<span style='font-weight:800;font-size:22px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge || "Post fixado") + "</span></div>";
+      icon("pin", C.rust, 28, 2.2) + "<span style='font-weight:800;font-size:22px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge || T.pinned) + "</span></div>";
     const img = a.photoFile
       ? "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px;background:url(\"" + String(a.photoFile).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>"
       : "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px'>" + photo(null, a.photoBrief, fit.ph, THEMES.white, { radius: 0 }) + "</div>";
@@ -233,7 +244,7 @@
       "<div class='kk-eyebrow' style='color:" + C.blueText + "'><i></i>" + esc(a.eyebrow || "") + "</div>" +
       "<h1 class='kk-title' style='color:" + C.navy + ";margin-top:24px;font-size:" + fit.fs + "px'>" + hl(a.title, a.highlight, accent(a.highlightColor, C.blueText)) + "</h1>" +
       (a.subtitle ? "<p class='kk-body' style='color:" + C.gray + ";margin-top:14px;font-size:" + fit.sub + "px;line-height:1.5'>" + esc(a.subtitle) + "</p>" : "") +
-      "</div>" + foot(a, THEMES.white, ctx, a.footerRight !== undefined ? a.footerRight : "Arraste");
+      "</div>" + foot(a, THEMES.white, ctx, a.footerRight !== undefined ? a.footerRight : T.swipe);
   };
 
   // Headline + paragraph + wide photo + up to 3 stats in a row.
@@ -293,7 +304,7 @@
       "<div style='display:flex;gap:22px;margin-bottom:34px'>" + icon(it.icon || "pin", t.dark ? C.yellow : C.blueText, 36, 2) +
       "<div style='font-size:26px;line-height:1.45;color:" + t.text + "'><b style='font-weight:700;color:" + t.title + "'>" + esc(it.label || "") + "</b> " + esc(it.text || "") + "</div></div>").join("");
     const next = a.nextTitle ? "<div style='background:" + (t.dark ? "rgba(255,255,255,.12)" : C.light) + ";border-radius:22px;padding:28px 30px;display:flex;align-items:center;justify-content:space-between'>" +
-      "<div><div style='font-size:22px;color:" + t.muted + "'>" + esc(a.nextLabel || "Próximo post fixado") + "</div>" +
+      "<div><div style='font-size:22px;color:" + t.muted + "'>" + esc(a.nextLabel || T.nextPinned) + "</div>" +
       "<div style='font-weight:800;font-size:30px;color:" + t.title + ";margin-top:6px'>" + esc(a.nextTitle) + "</div></div>" + icon("arrow", t.title, 32, 2.4) + "</div>" : "";
     const counter = a.counter !== undefined ? a.counter : (ctx.total > 1 ? pad2(ctx.index + 1) + " / " + pad2(ctx.total) : "");
     return img +
@@ -342,8 +353,8 @@
       "<div style='font-weight:700;font-size:30px;line-height:1.4;color:" + t.title + "'>" + esc(a.calloutText || "") + "</div></div>" : "";
     return "<div class='kk-pad'>" + head(a, t, ctx) + sp(56) + title(a, t) + sp(36) +
       "<div style='display:flex;gap:22px'>" +
-      "<div style='flex:1'>" + photo(a.beforePhotoFile, a.beforeBrief, 480, t, { chip: a.beforeLabel || "Antes", chipColor: "#555B63" }) + "</div>" +
-      "<div style='flex:1'>" + photo(a.afterPhotoFile, a.afterBrief, 480, t, { chip: a.afterLabel || "Depois", chipColor: C.greenText }) + "</div></div>" +
+      "<div style='flex:1'>" + photo(a.beforePhotoFile, a.beforeBrief, 480, t, { chip: a.beforeLabel || T.before, chipColor: "#555B63" }) + "</div>" +
+      "<div style='flex:1'>" + photo(a.afterPhotoFile, a.afterBrief, 480, t, { chip: a.afterLabel || T.after, chipColor: C.greenText }) + "</div></div>" +
       box + (a.body ? "<p class='kk-body' style='color:" + t.text + ";margin-top:28px;font-size:26px'>" + rich(a.body, t.title) + "</p>" : "") +
       "</div>" + foot(a, t, ctx);
   };
@@ -373,8 +384,8 @@
       "<div style='flex:1;display:flex;gap:18px;align-items:center;font-weight:700;font-size:26px;line-height:1.4;color:" + t.title + "'>" + icon("check", C.yellow, 28, 2.6) + esc(r.after) + "</div></div>").join("");
     return "<div class='kk-pad'>" + head(a, t, ctx) + sp(56) + title(a, t) + sp(40) +
       "<div style='display:flex;gap:30px;padding-bottom:18px'>" +
-      "<div style='flex:1;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:" + t.muted + "'>" + esc(a.leftLabel || "Antes") + "</div>" +
-      "<div style='flex:1;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:" + C.yellow + "'>" + esc(a.rightLabel || "Hoje") + "</div></div>" +
+      "<div style='flex:1;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:" + t.muted + "'>" + esc(a.leftLabel || T.before) + "</div>" +
+      "<div style='flex:1;font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:" + C.yellow + "'>" + esc(a.rightLabel || T.today) + "</div></div>" +
       rows + (a.footer ? "<p style='font-weight:700;font-size:27px;line-height:1.45;color:" + t.title + ";margin-top:28px'>" + esc(a.footer) + "</p>" : "") +
       "</div>" + foot(a, t, ctx);
   };
@@ -434,7 +445,7 @@
       "<div><div style='font-weight:800;font-size:32px;color:" + C.navy + "'>" + esc(x.title) + "</div>" +
       "<div style='font-size:22px;line-height:1.4;color:" + C.ink + ";margin-top:4px'>" + esc(x.text) + "</div></div></div>").join("");
     return "<div class='kk-pad'>" + head(a, t, ctx) + sp(52) + title(a, t) + sp(30) +
-      photo(a.photoFile, a.photoBrief, cards ? 340 : 560, t) + cards + "</div>" + foot(a, t, ctx, "Link na bio");
+      photo(a.photoFile, a.photoBrief, cards ? 340 : 560, t) + cards + "</div>" + foot(a, t, ctx, T.linkInBio);
   };
 
   // Before/after rows: up to 4 pairs of thumbnails with a coloured figure.
@@ -443,8 +454,8 @@
     const rows = (a.rows || []).slice(0, 4).map((r, i) => {
       const col = accent(r.color || colors[i], C.blueText);
       return "<div style='display:flex;gap:22px;align-items:center;padding:20px 0;border-top:2px solid " + t.rule + "'>" +
-        "<div style='flex:none;width:230px'>" + photo(r.beforePhotoFile, r.beforeBrief, 170, t, { chip: "Antes", chipColor: "#555B63" }) + "</div>" +
-        "<div style='flex:none;width:230px'>" + photo(r.afterPhotoFile, r.afterBrief, 170, t, { chip: "Depois", chipColor: col }) + "</div>" +
+        "<div style='flex:none;width:230px'>" + photo(r.beforePhotoFile, r.beforeBrief, 170, t, { chip: T.before, chipColor: "#555B63" }) + "</div>" +
+        "<div style='flex:none;width:230px'>" + photo(r.afterPhotoFile, r.afterBrief, 170, t, { chip: T.after, chipColor: col }) + "</div>" +
         "<div style='padding-left:10px'><div style='font-weight:800;font-size:22px;letter-spacing:.12em;text-transform:uppercase;color:" + col + "'>" + esc(r.kicker || "") + "</div>" +
         "<div style='font-weight:800;font-size:58px;line-height:1.05;color:" + col + "'>" + esc(r.value || "") + "</div>" +
         "<div style='font-size:22px;line-height:1.4;color:" + t.text + "'>" + esc(r.label || "") + "</div></div></div>";
@@ -460,11 +471,11 @@
       ? "<div style='position:absolute;inset:0;background:url(\"" + String(file).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>"
       : "<div style='position:absolute;inset:0'>" + photo(null, brief, 520, THEMES.white, { radius: 0 }) + "</div>";
     const pill = (txt, bgc, fg) => "<span style='position:absolute;top:56px;left:64px;background:" + bgc + ";color:" + fg + ";font-weight:800;font-size:22px;letter-spacing:.12em;padding:12px 24px;border-radius:999px;text-transform:uppercase'>" + esc(txt) + "</span>";
-    return "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:520px'>" + bg(a.beforePhotoFile, a.beforeBrief) + pill(a.beforeLabel || "Antes", "#fff", C.navy) + "</div>" +
+    return "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:520px'>" + bg(a.beforePhotoFile, a.beforeBrief) + pill(a.beforeLabel || T.before, "#fff", C.navy) + "</div>" +
       "<div style='position:absolute;left:0;top:520px;width:" + W + "px;height:188px;background:" + C.blue + ";display:flex;align-items:center;gap:36px;padding:0 64px'>" +
       "<div style='flex:none;font-weight:900;font-size:110px;color:#fff;letter-spacing:-.03em'>" + esc(a.value || "") + "</div>" +
       "<div style='font-weight:700;font-size:28px;line-height:1.4;color:#fff'>" + esc(a.text || "") + "</div></div>" +
-      "<div style='position:absolute;left:0;top:708px;width:" + W + "px;height:544px'>" + bg(a.afterPhotoFile, a.afterBrief) + pill(a.afterLabel || "Depois", C.greenText, "#fff") + "</div>" +
+      "<div style='position:absolute;left:0;top:708px;width:" + W + "px;height:544px'>" + bg(a.afterPhotoFile, a.afterBrief) + pill(a.afterLabel || T.after, C.greenText, "#fff") + "</div>" +
       "<div style='position:absolute;left:0;bottom:0;width:" + W + "px;height:98px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 64px'>" +
       "<img src='" + LOGO + "' alt='Karimu' style='height:56px;width:auto'><span style='font-weight:700;font-size:23px;color:" + C.navy + "'>" + esc(a.footerRight || "") + "</span></div>";
   };
@@ -481,24 +492,26 @@
   // Which photo fields a layout renders, for upload slots.
   function photoKeys(slide) {
     switch (slide.layout) {
-      case "before-after": case "ba-full": return [["beforePhotoFile", "Antes"], ["afterPhotoFile", "Depois"]];
+      case "before-after": case "ba-full": return [["beforePhotoFile", "Before photo"], ["afterPhotoFile", "After photo"]];
       case "ba-rows": {
         const out = [];
         (slide.rows || []).slice(0, 4).forEach((r, j) => {
-          out.push(["rows." + j + ".beforePhotoFile", "Linha " + (j + 1) + " antes"]);
-          out.push(["rows." + j + ".afterPhotoFile", "Linha " + (j + 1) + " depois"]);
+          out.push(["rows." + j + ".beforePhotoFile", "Row " + (j + 1) + " before"]);
+          out.push(["rows." + j + ".afterPhotoFile", "Row " + (j + 1) + " after"]);
         });
         return out;
       }
       case "numbered": case "icon-list": case "phases": case "compare": case "table": case "big-stat": case "timeline":
         return [];
-      default: return [["photoFile", "Foto"]];
+      default: return [["photoFile", "Photo"]];
     }
   }
 
   function slide(a, ctx) {
     ensureAssets();
     a = a || {};
+    ctx = ctx || { index: 0, total: 1 };
+    T = STRINGS[ctx.lang] || STRINGS["pt-BR"];
     const layout = L[a.layout] ? a.layout : "photo-text";
     const theme = THEMES[a.theme] || THEMES[DEFAULT_THEME[layout]] || THEMES.white;
     const bg = layout === "cover" || layout === "ba-full" ? C.white : theme.bg;
@@ -514,7 +527,8 @@
   function renderPost(post) {
     if (!isKarimuPost(post)) return [];
     const n = post.slides.length;
-    return post.slides.map((s, i) => slide(s, { index: i, total: n, isFirst: i === 0, isLast: i === n - 1 }));
+    const lang = post.language === "en-US" ? "en-US" : "pt-BR";
+    return post.slides.map((s, i) => slide(s, { index: i, total: n, isFirst: i === 0, isLast: i === n - 1, lang }));
   }
 
   // Upload slots across every slide, keyed "s<index>.<path>".
