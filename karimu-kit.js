@@ -215,19 +215,24 @@
 
   // Cover: photo on top, rainbow bar, eyebrow + headline + subtitle, swipe cue.
   L.cover = function (a, t, ctx) {
+    // The text block below the photo has room for two headline lines at 68px.
+    // Longer headlines step the type down and give back photo height, so the
+    // subtitle never runs into the footer.
+    const len = String(a.title || "").length + (a.subtitle ? String(a.subtitle).length / 4 : 0);
+    const fit = len <= 60 ? { ph: 800, fs: 68, sub: 28 } : len <= 92 ? { ph: 770, fs: 62, sub: 27 } : { ph: 700, fs: 54, sub: 25 };
     const bar = ["#4A8BD0", "#6DB33F", "#8B6FC1", C.orange, "#52AE5E"].map(c => "<div style='flex:1;background:" + c + "'></div>").join("");
     const badge = a.badge === "" ? "" :
       "<div style='position:absolute;top:56px;left:64px;background:#fff;border-radius:999px;padding:14px 26px 14px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,.12)'>" +
       icon("pin", C.rust, 28, 2.2) + "<span style='font-weight:800;font-size:22px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge || "Post fixado") + "</span></div>";
     const img = a.photoFile
-      ? "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:800px;background:url(\"" + String(a.photoFile).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>"
-      : "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:800px'>" + photo(null, a.photoBrief, 800, THEMES.white, { radius: 0 }) + "</div>";
+      ? "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px;background:url(\"" + String(a.photoFile).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>"
+      : "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px'>" + photo(null, a.photoBrief, fit.ph, THEMES.white, { radius: 0 }) + "</div>";
     return img + badge +
-      "<div style='position:absolute;left:0;top:800px;width:" + W + "px;height:10px;display:flex'>" + bar + "</div>" +
-      "<div style='position:absolute;left:80px;right:80px;top:866px'>" +
+      "<div style='position:absolute;left:0;top:" + fit.ph + "px;width:" + W + "px;height:10px;display:flex'>" + bar + "</div>" +
+      "<div style='position:absolute;left:80px;right:80px;top:" + (fit.ph + 62) + "px'>" +
       "<div class='kk-eyebrow' style='color:" + C.blueText + "'><i></i>" + esc(a.eyebrow || "") + "</div>" +
-      "<h1 class='kk-title' style='color:" + C.navy + ";margin-top:26px;font-size:68px'>" + hl(a.title, a.highlight, accent(a.highlightColor, C.blueText)) + "</h1>" +
-      (a.subtitle ? "<p class='kk-body' style='color:" + C.gray + ";margin-top:16px;font-size:28px;line-height:1.5'>" + esc(a.subtitle) + "</p>" : "") +
+      "<h1 class='kk-title' style='color:" + C.navy + ";margin-top:24px;font-size:" + fit.fs + "px'>" + hl(a.title, a.highlight, accent(a.highlightColor, C.blueText)) + "</h1>" +
+      (a.subtitle ? "<p class='kk-body' style='color:" + C.gray + ";margin-top:14px;font-size:" + fit.sub + "px;line-height:1.5'>" + esc(a.subtitle) + "</p>" : "") +
       "</div>" + foot(a, THEMES.white, ctx, a.footerRight !== undefined ? a.footerRight : "Arraste");
   };
 
@@ -303,6 +308,19 @@
   L.stats = function (a, t, ctx) {
     const stats = (a.stats || []).slice(0, 6);
     const hasPhoto = !!(a.photoFile || a.photoBrief);
+    // Up to three figures with no photo: one figure per row, set large, so the
+    // slide is filled by the numbers instead of a half-empty grid.
+    if (!hasPhoto && stats.length && stats.length <= 3) {
+      const rows = stats.map(s => {
+        const col = s.color ? accent(s.color, t.title) : t.title;
+        return "<div style='display:flex;align-items:center;gap:44px;padding:34px 0;border-top:4px solid " + (s.color ? col : C.yellow) + "'>" +
+          "<div class='kk-stat-n' style='flex:none;min-width:330px;font-size:104px;color:" + col + "'>" + esc(s.value) + "</div>" +
+          "<div style='font-size:28px;line-height:1.4;color:" + t.text + "'>" + esc(s.label) + "</div></div>";
+      }).join("");
+      return "<div class='kk-pad'>" + head(a, t, ctx) + sp(56) + title(a, t) +
+        (a.body ? "<p class='kk-body' style='color:" + t.text + ";margin-top:22px'>" + rich(a.body, t.title) + "</p>" : "") +
+        sp(56) + rows + "</div>" + foot(a, t, ctx);
+    }
     const rowsHtml = [];
     for (let i = 0; i < stats.length; i += 2) {
       rowsHtml.push("<div style='display:flex;gap:46px;margin-top:" + (i ? 36 : 0) + "px'>" +
