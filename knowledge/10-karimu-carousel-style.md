@@ -103,3 +103,39 @@ melhor do que qualquer pessoa de fora." Use "nós" for Karimu. No rescue languag
 (*salvar, resgatar, carentes, coitados*). Brazilian number format: `4,9%`,
 `3.236`, `14 mil+`, `US$ 1`. Places and school names stay in their original form
 (Ayalagaya, Dareda Kati, Ayalagaya Secondary School).
+
+---
+
+## Beyond the carousel: single images, Stories, Reel covers, LinkedIn
+
+Same palette, type and voice; one idea per image. Sizes and layouts:
+
+| Format | Size | Layouts |
+|---|---|---|
+| Single image (feed) | 1080×1350 | `photo-headline`, `stat-card`, `quote`, `news`, `event`, `award`, plus `before-after`, `ba-full`, `stats`, `big-stat`, `compare`, `timeline` on their own |
+| Square | 1080×1080 | `photo-headline`, `stat-card`, `quote`, `news`, `event`, `award` |
+| Story | 1080×1920, 1–5 frames | `photo-headline`, `stat-card`, `quote`, `event`, `story-cta`, `story-poll` |
+| Reel cover | 1080×1920 | `reel-cover` |
+| LinkedIn / Facebook | 1200×628 | `photo-headline`, `stat-card` |
+
+| layout | What it is | Best for |
+|---|---|---|
+| `photo-headline` | Full-bleed photo, dark fade, headline and short line over it, optional badge ("Em obra") | A strong photo of people doing the work |
+| `stat-card` | One figure set huge, its label, a context line, the source | The single number that tells the story |
+| `quote` | Photo, large quotation mark, the quote, name and role | Words of a community member, staff or volunteer — **verbatim only** |
+| `news` | Rust "Novidade" tag, date, headline, photo, two lines | Something that just happened: a survey finished, a grant matched |
+| `event` | Photo band, white date block, up to 3 detail rows, yellow CTA pill | Trips, campaigns, deadlines, live sessions |
+| `award` | Star badge, year, award title, who received it | Government recognitions and rankings |
+| `reel-cover` | Full-bleed frame, "Assista" pill, hook headline inside the 4:5 grid crop | The cover of every Reel |
+| `story-cta` | Headline, photo, "Toque no link" with room for the link sticker | Newsletter sign-up, report, site |
+| `story-poll` | A question in big type, room for the poll / quiz sticker | Engagement: ask, then answer in the next frame |
+
+Rules for these formats:
+- One message per image. A single image that needs three ideas is a carousel.
+- Stories: text stays out of the top 250px and bottom 300px (Instagram UI). A
+  sequence can ask (`story-poll`), answer (`stat-card`) and invite (`story-cta`).
+- Reel covers: hook ≤ 8 words; the profile grid crops to 4:5, so the headline
+  sits in the middle.
+- LinkedIn / Facebook: lead with result + method, professional tone.
+- Quotes are never invented or reworded. In Portuguese they are a faithful
+  translation and the notes say so.

@@ -108,6 +108,13 @@ tabs in a post to switch versions, and **+ Create English version** (or
 Portuguese) to add a missing one later. The zip download holds both versions
 in `pt/` and `en/` folders. One approval covers both versions.
 
+The same style comes in other **formats**, picked in the request form:
+single image (feed 4:5), square (1:1), Story (9:16, 1–5 frames), Reel cover
+(9:16) and LinkedIn / Facebook (1200×628). Each has its own templates —
+photo + headline, single figure, quote, news, event, award, Story with link,
+Story poll — listed in `knowledge/10-karimu-carousel-style.md`. Every format
+works in both languages and downloads at its exact size.
+
 ## Removing posts
 
 Any post can be removed with the 🗑 button on its card or in its modal.

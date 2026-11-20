@@ -52,9 +52,19 @@ Static site + one serverless function. No build step; Vercel zero-config.
   slots are keyed `s<slide>.<path>`, e.g. `s3.rows.1.beforePhotoFile`.
   Logos: `images/logo-h.png` (light slides) and `images/logo-h-white.png`
   (dark slides), cut from the approved deck.
-- The generator takes `style` (`kraft` | `karimu`), `language` (`both` |
-  `pt-BR` | `en-US`) and `slideCount`. Karimu requests are capped at 2 posts
-  so the 60-second function limit holds.
+- **Karimu formats.** Besides the carousel, the Karimu style has single-image
+  layouts (`photo-headline`, `stat-card`, `quote`, `news`, `event`, `award`,
+  `reel-cover`, `story-cta`, `story-poll`) in four sizes: feed 1080×1350,
+  square 1080×1080, story 1080×1920, landscape 1200×628. A post carries
+  `kformat` (`carousel` | `single` | `square` | `story` | `reel-cover` |
+  `landscape`) and `size`. The format → size → allowed layouts table exists
+  twice, `FORMATS` in `karimu-kit.js` and `KARIMU_FORMATS` in
+  `api/generate-posts.js`: **change both together.** Story layouts keep text
+  out of the top 250px / bottom 300px; the Reel cover keeps its headline
+  inside the 4:5 grid crop.
+- The generator takes `style` (`kraft` | `karimu`), `kformat`, `language`
+  (`both` | `pt-BR` | `en-US`) and `slideCount`. Posts per request are capped
+  per format (carousel 2, story 3, others 4) so the 60-second limit holds.
 - **Bilingual carousels.** A Karimu post has `language` (the version it was
   drafted in) and `versions: { "en-US": { title, copy, cta, hashtags,
   altText, slides } }` for the other one. With `language: "both"` the

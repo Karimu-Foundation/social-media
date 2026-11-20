@@ -369,7 +369,8 @@ function cardHTML(post) {
 function artworkFor(post) {
   if (typeof KarimuKit !== "undefined" && KarimuKit.isKarimuPost(post)) {
     const slides = KarimuKit.renderPost(post);
-    return { html: slides[0], size: { w: KarimuKit.W, h: KarimuKit.H }, slides: slides.length };
+    const sz = KarimuKit.postSize(post);
+    return { html: slides[0], size: { w: sz.w, h: sz.h }, slides: slides.length };
   }
   const html = (typeof KraftRender !== "undefined" && KraftRender.render(post)) || null;
   return html ? { html, size: KraftRender.sizeFor(post.format), slides: 1 } : null;
@@ -409,7 +410,10 @@ function sizeArtThumbs() {
     const scaler = box.querySelector(".thumb-scaler");
     if (!scaler) return;
     const w = box.clientWidth;
-    if (w) scaler.style.zoom = String(w / 1080);
+    // Karimu artwork can be 1080 or 1200 wide (LinkedIn); kraft is 1080.
+    const root = scaler.firstElementChild;
+    const native = (root && parseInt(root.style.width, 10)) || 1080;
+    if (w) scaler.style.zoom = String(w / native);
   });
 }
 
@@ -678,9 +682,15 @@ async function downloadArtwork(id) {
 // ---- Karimu-style carousels ----
 function karimuArtworkSection(post) {
   const slides = KarimuKit.renderPost(post);
+  const sz = KarimuKit.postSize(post);
+  // Previews are 260px wide, except tall Stories which would get too long.
+  const boxW = sz.h > 1500 ? 200 : 260;
+  const boxH = Math.round(sz.h * boxW / sz.w);
+  const zoom = (boxW / sz.w).toFixed(5);
+  const fmt = (KarimuKit.FORMATS[post.kformat] || KarimuKit.FORMATS.carousel).label.replace(/^Karimu /, "");
   const strip = slides.map((html, i) => `
-    <figure class="kk-slide">
-      <div class="kk-slide-box"><div class="kk-slide-scaler">${html}</div></div>
+    <figure class="kk-slide" style="width:${boxW}px">
+      <div class="kk-slide-box" style="width:${boxW}px;height:${boxH}px"><div class="kk-slide-scaler" style="zoom:${zoom}">${html}</div></div>
       <figcaption>
         <span>${i + 1} / ${slides.length} · ${escapeHTML(post.slides[i].layout || "")}</span>
         <button class="small ghost" onclick="downloadSlide('${post.id}', ${i})">⬇ PNG</button>
@@ -688,7 +698,7 @@ function karimuArtworkSection(post) {
     </figure>`).join("");
   return `
     <section>
-      <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(Karimu pinned-post style · ${slides.length} slide${slides.length === 1 ? "" : "s"} · 1080×1350 — dashed boxes are photos still to be sourced)</span></h4>
+      <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(Karimu style · ${escapeHTML(fmt)} · ${slides.length} ${sz.key === "story" ? "frame" : "slide"}${slides.length === 1 ? "" : "s"} · ${sz.w}×${sz.h} — dashed boxes are photos still to be sourced)</span></h4>
       <div class="kk-strip">${strip}</div>
       <div class="actions" style="margin-top:10px;">
         <button class="small primary" onclick="downloadAllSlides('${post.id}')">⬇ Download all slides (.zip${languagesOf(POSTS.find((p) => p.id === post.id) || post).length > 1 ? ", PT + EN" : ""})</button>
@@ -760,7 +770,8 @@ function slugify(text) {
 async function captureKarimuSlide(post, index) {
   const html2canvas = await loadHtml2Canvas();
   const host = document.createElement("div");
-  host.style.cssText = "position:fixed;left:-20000px;top:0;width:1080px;height:1350px;z-index:-1";
+  const sz = KarimuKit.postSize(post);
+  host.style.cssText = "position:fixed;left:-20000px;top:0;width:" + sz.w + "px;height:" + sz.h + "px;z-index:-1";
   host.innerHTML = KarimuKit.renderPost(post)[index];
   document.body.appendChild(host);
   try {
@@ -774,7 +785,7 @@ async function captureKarimuSlide(post, index) {
     });
     frame.querySelectorAll("img").forEach((img) => urls.push(img.src));
     await Promise.all(urls.map((u) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = res; im.src = u; })));
-    return await html2canvas(frame, { backgroundColor: "#ffffff", scale: 1, useCORS: true, logging: false, width: 1080, height: 1350 });
+    return await html2canvas(frame, { backgroundColor: "#ffffff", scale: 1, useCORS: true, logging: false, width: sz.w, height: sz.h });
   } finally {
     host.remove();
   }
@@ -972,7 +983,17 @@ function openRequestModal() {
               <option value="en-US">English (US)</option>
             </select>
           </label>
-          <label>Slides per carousel
+          <label>Format
+            <select id="req-kformat" onchange="onRequestStyleChange()">
+              <option value="carousel">Carousel (4:5, 3–8 slides)</option>
+              <option value="single">Single image (feed 4:5)</option>
+              <option value="square">Square (1:1)</option>
+              <option value="story">Story (9:16, 1–5 frames)</option>
+              <option value="reel-cover">Reel cover (9:16)</option>
+              <option value="landscape">LinkedIn / Facebook (1200×628)</option>
+            </select>
+          </label>
+          <label id="req-slides-label">Slides per carousel
             <select id="req-slides">
               <option value="">Let the agent choose (5–7)</option>
               <option value="1">1 (single post)</option>
@@ -1079,13 +1100,28 @@ function onRequestStyleChange() {
   const style = document.getElementById("req-style").value;
   document.getElementById("req-format-row").style.display = style === "kraft" ? "" : "none";
   document.getElementById("req-karimu-opts").style.display = style === "karimu" ? "" : "none";
-  // A carousel is several times longer than a kraft card; the API drafts at
-  // most 2 per request so it finishes inside Vercel's 60-second limit.
+  // Longer formats get fewer drafts per request so the API finishes inside
+  // Vercel's 60-second limit: carousels 2, stories 3, single images 4.
+  const kformat = document.getElementById("req-kformat").value;
+  const cap = style !== "karimu" ? 10 : kformat === "carousel" ? 2 : kformat === "story" ? 3 : 4;
   const qty = document.getElementById("req-qty");
-  qty.max = style === "karimu" ? "2" : "10";
-  if (style === "karimu" && Number(qty.value) > 2) qty.value = "1";
+  qty.max = String(cap);
+  if (Number(qty.value) > cap) qty.value = "1";
+  // Slide count applies to carousels and stories only.
+  const slidesSel = document.getElementById("req-slides");
+  const multi = kformat === "carousel" || kformat === "story";
+  document.getElementById("req-slides-label").style.display = style === "karimu" && multi ? "" : "none";
+  if (style === "karimu") {
+    const opts = kformat === "story"
+      ? [["", "Let the agent choose (1–3)"], ["1", "1"], ["2", "2"], ["3", "3"], ["4", "4"], ["5", "5"]]
+      : [["", "Let the agent choose (5–7)"], ["3", "3"], ["4", "4"], ["5", "5"], ["6", "6"], ["7", "7"], ["8", "8"]];
+    if (slidesSel.dataset.kind !== kformat) {
+      slidesSel.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+      slidesSel.dataset.kind = kformat;
+    }
+  }
   document.getElementById("req-style-hint").textContent = style === "karimu"
-    ? "Clean blue/white slides with eyebrow, headline, stats and logo footer, rendered as 1080×1350 PNGs plus a caption."
+    ? "Clean Karimu style (blue, navy, yellow, Figtree) in the chosen format, exported as PNGs plus a caption."
     : "Torn kraft paper, brush banners and script notes — the format picker below chooses the card type.";
 }
 
@@ -1102,7 +1138,8 @@ async function submitRequest() {
   const style = document.getElementById("req-style").value;
   const format = style === "kraft" ? document.getElementById("req-format").value : "";
   const language = document.getElementById("req-language").value;
-  const slideCount = document.getElementById("req-slides").value;
+  const kformat = document.getElementById("req-kformat").value;
+  const slideCount = (kformat === "carousel" || kformat === "story") ? document.getElementById("req-slides").value : "1";
   const funnelStage = document.getElementById("req-funnel").value;
   const dateRange = document.getElementById("req-daterange").value.trim();
   const topic = document.getElementById("req-topic").value.trim();
@@ -1138,7 +1175,7 @@ async function submitRequest() {
     const resp = await fetch("/api/generate-posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable: assetsNote, notes, style, language, slideCount }),
+      body: JSON.stringify({ quantity: qty, channels, pillar, format, funnelStage, dateRange, topic, assetsAvailable: assetsNote, notes, style, language, slideCount, kformat }),
     });
     const data = await resp.json();
     if (!resp.ok) {
@@ -1159,7 +1196,7 @@ async function submitRequest() {
     if (style === "karimu" && language === "both") {
       for (let i = 0; i < newPosts.length; i++) {
         const p = newPosts[i];
-        statusBox.textContent = "Writing the English version" + (newPosts.length > 1 ? " of carousel " + (i + 1) + " of " + newPosts.length : "") + "…";
+        statusBox.textContent = "Writing the English version" + (newPosts.length > 1 ? " of post " + (i + 1) + " of " + newPosts.length : "") + "…";
         try {
           saveVersion(p, otherLanguage(langOf(p)), await requestTranslation(p, otherLanguage(langOf(p))));
         } catch (e) {

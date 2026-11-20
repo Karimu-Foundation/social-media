@@ -158,9 +158,11 @@
   // slide from the post's language (see slide()).
   const STRINGS = {
     "pt-BR": { swipe: "Arraste", linkInBio: "Link na bio", nextPinned: "Próximo post fixado", before: "Antes", after: "Depois",
-      today: "Hoje", pinned: "Post fixado", photoNeeded: "Foto necessária", briefDefault: "Descreva a foto que precisa ser escolhida." },
+      today: "Hoje", pinned: "Post fixado", photoNeeded: "Foto necessária", briefDefault: "Descreva a foto que precisa ser escolhida.",
+      news: "Novidade", watch: "Assista", tapLink: "Toque no link", vote: "Vote na enquete" },
     "en-US": { swipe: "Swipe", linkInBio: "Link in bio", nextPinned: "Next pinned post", before: "Before", after: "After",
-      today: "Today", pinned: "Pinned post", photoNeeded: "Photo needed", briefDefault: "Describe the photo that still needs to be chosen." },
+      today: "Today", pinned: "Pinned post", photoNeeded: "Photo needed", briefDefault: "Describe the photo that still needs to be chosen.",
+      news: "News", watch: "Watch", tapLink: "Tap the link", vote: "Vote in the poll" },
   };
   let T = STRINGS["pt-BR"];
 
@@ -480,13 +482,289 @@
       "<img src='" + LOGO + "' alt='Karimu' style='height:56px;width:auto'><span style='font-weight:700;font-size:23px;color:" + C.navy + "'>" + esc(a.footerRight || "") + "</span></div>";
   };
 
+  // ================= single-image templates =================
+  // Standalone posts in four sizes: feed 1080x1350, square 1080x1080,
+  // story 1080x1920 (Stories and Reel covers) and landscape 1200x628
+  // (LinkedIn / Facebook link posts). Each layout reads its canvas from
+  // ctx.size and lays itself out for it. Story layouts keep text out of the
+  // top 250px and bottom 300px, where Instagram puts its own UI.
+
+  function bgPhoto(file, brief, css, t) {
+    if (file) {
+      return "<div style='position:absolute;" + css + ";background:url(\"" + String(file).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>";
+    }
+    return "<div style='position:absolute;" + css + ";display:flex'>" +
+      "<div class='kk-ph' style='flex:1;border-radius:0;border-color:#B9C6D6;background:#F4F7FB;color:" + C.gray + "'>" +
+      "<b style='color:" + C.rust + "'>" + esc(T.photoNeeded) + "</b><span>" + esc(brief || T.briefDefault) + "</span></div></div>";
+  }
+
+  function logoTag(dark, h, css) {
+    return "<img src='" + (dark ? LOGO_WHITE : LOGO) + "' alt='Karimu' style='height:" + h + "px;width:auto;display:block;flex:none;" + (css || "align-self:flex-start") + "'>";
+  }
+
+  function eyebrowTag(text, color, size) {
+    return "<div class='kk-eyebrow' style='color:" + color + (size ? ";font-size:" + size + "px" : "") + "'><i></i>" + esc(text || "") + "</div>";
+  }
+
+  function titleTag(a, color, hlColor, size, extra) {
+    return "<h1 class='kk-title' style='color:" + color + ";font-size:" + size + "px;" + (extra || "") + "'>" +
+      hl(a.title, a.highlight, accent(a.highlightColor, hlColor)) + "</h1>";
+  }
+
+  // Fit headline size to the copy length and the canvas.
+  function fitTitle(text, base) {
+    const n = String(text || "").length;
+    return n <= 30 ? base : n <= 50 ? Math.round(base * 0.88) : n <= 70 ? Math.round(base * 0.78) : Math.round(base * 0.68);
+  }
+
+  const RAINBOW = ["#4A8BD0", "#6DB33F", "#8B6FC1", "#E07A47", "#52AE5E"];
+  function rainbow(css, h) {
+    return "<div style='position:absolute;" + css + ";height:" + (h || 10) + "px;display:flex'>" +
+      RAINBOW.map(c => "<div style='flex:1;background:" + c + "'></div>").join("") + "</div>";
+  }
+
+  // Full-bleed photo, dark fade, headline over it.
+  L["photo-headline"] = function (a, t, ctx) {
+    const S = ctx.size;
+    if (S.key === "landscape") {
+      return bgPhoto(a.photoFile, a.photoBrief, "right:0;top:0;width:" + Math.round(S.w * 0.52) + "px;height:" + S.h + "px", t) +
+        "<div style='position:absolute;left:0;top:0;width:" + Math.round(S.w * 0.48) + "px;height:" + S.h + "px;background:" + C.navyBg + ";padding:54px 52px;display:flex;flex-direction:column'>" +
+        eyebrowTag(a.eyebrow, "#fff", 18) + "<div style='height:26px'></div>" +
+        titleTag(a, "#fff", C.yellow, fitTitle(a.title, 50)) +
+        (a.subtitle ? "<p style='color:rgba(255,255,255,.85);font-size:21px;line-height:1.45;margin-top:16px'>" + esc(a.subtitle) + "</p>" : "") +
+        "<div style='flex:1'></div>" + logoTag(true, 44) + "</div>";
+    }
+    const story = S.key === "story";
+    const pad = 80;
+    const bottom = story ? 300 : 52;
+    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t) +
+      "<div style='position:absolute;inset:0;background:linear-gradient(to top, rgba(20,45,68,.94) 0%, rgba(20,45,68,.78) " + (story ? 34 : 38) + "%, rgba(20,45,68,0) " + (story ? 62 : 70) + "%)'></div>" +
+      (a.badge ? "<div style='position:absolute;top:" + (story ? 250 : 56) + "px;left:64px;background:#fff;border-radius:999px;padding:13px 24px 13px 20px;display:flex;align-items:center;gap:12px'>" +
+        icon(a.badgeIcon || "pin", C.rust, 26, 2.2) + "<span style='font-weight:800;font-size:21px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge) + "</span></div>" : "") +
+      "<div style='position:absolute;left:" + pad + "px;right:" + pad + "px;bottom:" + (bottom + 104) + "px'>" +
+      eyebrowTag(a.eyebrow, "#fff") + "<div style='height:22px'></div>" +
+      titleTag(a, "#fff", C.yellow, fitTitle(a.title, S.key === "square" ? 66 : story ? 90 : 74)) +
+      (a.subtitle ? "<p style='color:rgba(255,255,255,.88);font-size:28px;line-height:1.5;margin-top:16px'>" + esc(a.subtitle) + "</p>" : "") +
+      "</div>" +
+      "<div style='position:absolute;left:" + pad + "px;right:" + pad + "px;bottom:" + bottom + "px;height:64px;display:flex;align-items:center;justify-content:space-between'>" +
+      logoTag(true, 60) + "<span style='font-weight:700;font-size:22px;color:#fff'>" + esc(a.footerRight !== undefined ? a.footerRight : "karimufoundation.org") + "</span></div>";
+  };
+
+  // One figure, set huge. The single-stat card.
+  L["stat-card"] = function (a, t, ctx) {
+    const S = ctx.size;
+    const valColor = accent(a.valueColor, t.dark ? C.yellow : C.blueText);
+    if (S.key === "landscape") {
+      return rainbow("left:0;right:0;top:0", 8) +
+        "<div style='position:absolute;left:56px;right:56px;top:52px;bottom:44px;display:flex;flex-direction:column'>" +
+        eyebrowTag(a.eyebrow, t.eyebrow, 18) +
+        "<div style='flex:1;display:flex;align-items:center;gap:44px'>" +
+        "<div style='flex:none;font-weight:900;font-size:190px;line-height:1;letter-spacing:-.05em;color:" + valColor + "'>" + esc(a.value) + "</div>" +
+        "<div><div style='font-weight:800;font-size:38px;line-height:1.2;color:" + t.title + "'>" + esc(a.label) + "</div>" +
+        (a.note ? "<div style='font-size:21px;line-height:1.45;color:" + t.muted + ";margin-top:12px'>" + esc(a.note) + "</div>" : "") + "</div></div>" +
+        "<div style='display:flex;justify-content:space-between;align-items:center'>" + logoTag(t.dark, 42) +
+        "<span style='font-size:17px;color:" + t.muted + "'>" + esc(a.source || "") + "</span></div></div>";
+    }
+    const story = S.key === "story";
+    const top = story ? 250 : 72;
+    const valSize = S.key === "square" ? 270 : story ? 360 : 300;
+    return rainbow("left:0;right:0;top:0", 10) +
+      "<div style='position:absolute;left:80px;right:80px;top:" + top + "px;bottom:" + (story ? 300 : 52) + "px;display:flex;flex-direction:column'>" +
+      eyebrowTag(a.eyebrow, t.eyebrow) +
+      "<div style='flex:1;display:flex;flex-direction:column;justify-content:center'>" +
+      "<div style='font-weight:900;font-size:" + valSize + "px;line-height:.95;letter-spacing:-.05em;color:" + valColor + "'>" + esc(a.value) + "</div>" +
+      "<div style='font-weight:800;font-size:" + (S.key === "square" ? 46 : story ? 62 : 52) + "px;line-height:1.15;color:" + t.title + ";margin-top:22px;letter-spacing:-.01em'>" + esc(a.label) + "</div>" +
+      (a.note ? "<div style='font-size:28px;line-height:1.5;color:" + t.text + ";margin-top:22px;max-width:860px'>" + rich(a.note, t.title) + "</div>" : "") +
+      "</div>" +
+      (a.source ? "<div style='font-size:20px;color:" + t.muted + ";margin-bottom:26px'>" + esc(a.source) + "</div>" : "") +
+      "<div style='display:flex;justify-content:space-between;align-items:center'>" + logoTag(t.dark, 60) +
+      "<span style='font-weight:700;font-size:22px;color:" + (t.dark ? "#fff" : C.navy) + "'>" + esc(a.footerRight !== undefined ? a.footerRight : "karimufoundation.org") + "</span></div></div>";
+  };
+
+  // Testimonial: photo, a large quote, name and role.
+  L.quote = function (a, t, ctx) {
+    const S = ctx.size;
+    const qColor = t.dark ? "#fff" : C.navy;
+    const mark = "<div style='font-family:Georgia,serif;font-weight:700;font-size:150px;line-height:.7;color:" + C.yellow + ";height:70px'>&ldquo;</div>";
+    const body = (size) => mark +
+      "<div style='font-weight:700;font-size:" + size + "px;line-height:1.3;color:" + qColor + ";margin-top:18px;letter-spacing:-.01em'>" + esc(a.quote) + "</div>" +
+      "<div style='margin-top:30px;display:flex;align-items:center;gap:16px'><i style='display:block;width:40px;height:4px;background:" + C.yellow + ";border-radius:2px'></i>" +
+      "<div><div style='font-weight:800;font-size:27px;color:" + (t.dark ? C.yellow : C.blueText) + "'>" + esc(a.name) + "</div>" +
+      (a.role ? "<div style='font-size:22px;color:" + t.muted + ";margin-top:2px'>" + esc(a.role) + "</div>" : "") + "</div></div>";
+    // Quotes run longer than headlines, so they step down more gently.
+    const qSize = (base) => {
+      const n = String(a.quote || "").length;
+      return n <= 70 ? base : n <= 110 ? Math.round(base * 0.86) : Math.round(base * 0.74);
+    };
+    if (S.key === "square") {
+      return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:430px;height:" + S.h + "px", t) +
+        "<div style='position:absolute;left:490px;right:64px;top:72px;bottom:52px;display:flex;flex-direction:column'>" +
+        eyebrowTag(a.eyebrow, t.eyebrow) + "<div style='flex:1;display:flex;flex-direction:column;justify-content:center'>" + body(qSize(44)) + "</div>" +
+        logoTag(t.dark, 56) + "</div>";
+    }
+    const story = S.key === "story";
+    const photoH = story ? 820 : 560;
+    return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:" + S.w + "px;height:" + photoH + "px", t) +
+      rainbow("left:0;right:0;top:" + photoH + "px", 10) +
+      "<div style='position:absolute;left:80px;right:80px;top:" + (photoH + 60) + "px;bottom:" + (story ? 300 : 52) + "px;display:flex;flex-direction:column'>" +
+      eyebrowTag(a.eyebrow, t.eyebrow) + "<div style='height:30px'></div>" + body(qSize(story ? 64 : 58)) +
+      "<div style='flex:1'></div><div style='display:flex;justify-content:space-between;align-items:center'>" + logoTag(t.dark, 60) +
+      "<span style='font-weight:700;font-size:22px;color:" + (t.dark ? "#fff" : C.navy) + "'>" + esc(a.footerRight !== undefined ? a.footerRight : "karimufoundation.org") + "</span></div></div>";
+  };
+
+  // News / milestone: a dated tag, headline, photo and two lines of context.
+  L.news = function (a, t, ctx) {
+    const S = ctx.size;
+    const square = S.key === "square";
+    return "<div class='kk-pad' style='padding-top:68px'>" +
+      "<div style='display:flex;align-items:center;gap:18px'>" +
+      "<span style='background:" + C.rust + ";color:#fff;font-weight:800;font-size:20px;letter-spacing:.14em;text-transform:uppercase;padding:10px 20px;border-radius:999px'>" + esc(a.tag || T.news) + "</span>" +
+      "<span style='font-weight:700;font-size:22px;letter-spacing:.08em;text-transform:uppercase;color:" + t.muted + "'>" + esc(a.date || "") + "</span></div>" +
+      "<div style='height:34px'></div>" + titleTag(a, t.title, t.hl, fitTitle(a.title, square ? 60 : 68)) +
+      "<div style='height:32px'></div>" + photo(a.photoFile, a.photoBrief, square ? 330 : 470, t) +
+      (a.body ? "<p class='kk-body' style='color:" + t.text + ";margin-top:28px;font-size:" + (square ? 25 : 28) + "px'>" + rich(a.body, t.title) + "</p>" : "") +
+      "</div>" + foot(a, t, ctx);
+  };
+
+  // Event / date: photo band, a white date block, details and a CTA pill.
+  L.event = function (a, t, ctx) {
+    const S = ctx.size;
+    const story = S.key === "story";
+    const photoH = story ? 760 : S.key === "square" ? 380 : 500;
+    const rows = (a.details || []).slice(0, 3).map(d =>
+      "<div style='display:flex;gap:20px;align-items:center;margin-top:20px'>" +
+      "<div style='flex:none;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center'>" + icon(d.icon || "calendar", C.yellow, 28, 2) + "</div>" +
+      "<div style='font-size:26px;line-height:1.35;color:#fff'>" + rich(d.text, C.yellow) + "</div></div>").join("");
+    return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:" + S.w + "px;height:" + photoH + "px", t) +
+      "<div style='position:absolute;left:0;top:" + photoH + "px;width:" + S.w + "px;bottom:0;background:" + C.navyBg + "'></div>" +
+      "<div style='position:absolute;left:80px;top:" + (photoH - 92) + "px;background:#fff;border-radius:22px;padding:20px 30px;box-shadow:0 10px 30px rgba(0,0,0,.2);text-align:center;min-width:180px'>" +
+      "<div style='font-weight:800;font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:" + C.rust + "'>" + esc(a.dateTop || "") + "</div>" +
+      "<div style='font-weight:900;font-size:64px;line-height:1;color:" + C.navy + ";margin-top:6px'>" + esc(a.dateMain || "") + "</div>" +
+      (a.dateBottom ? "<div style='font-weight:700;font-size:20px;color:" + C.gray + ";margin-top:6px'>" + esc(a.dateBottom) + "</div>" : "") + "</div>" +
+      "<div style='position:absolute;left:80px;right:80px;top:" + (photoH + 130) + "px;bottom:" + (story ? 300 : 52) + "px;display:flex;flex-direction:column'>" +
+      eyebrowTag(a.eyebrow, "#fff") + "<div style='height:20px'></div>" +
+      titleTag(a, "#fff", C.yellow, fitTitle(a.title, S.key === "square" ? 52 : story ? 76 : 60)) + rows +
+      "<div style='flex:1;min-height:20px'></div>" +
+      "<div style='display:flex;justify-content:space-between;align-items:center'>" + logoTag(true, 56) +
+      (a.cta ? "<span style='background:" + C.yellow + ";color:" + C.navy + ";font-weight:800;font-size:24px;padding:16px 30px;border-radius:999px;display:flex;align-items:center;gap:12px'>" + esc(a.cta) + icon("arrow", C.navy, 24, 2.6) + "</span>" : "") +
+      "</div></div>";
+  };
+
+  // Award / recognition.
+  L.award = function (a, t, ctx) {
+    const S = ctx.size;
+    const square = S.key === "square";
+    return "<div style='position:absolute;left:80px;right:80px;top:72px;bottom:52px;display:flex;flex-direction:column;align-items:center;text-align:center'>" +
+      "<div style='align-self:stretch'>" + eyebrowTag(a.eyebrow, t.eyebrow) + "</div>" +
+      "<div style='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center'>" +
+      "<div style='width:" + (square ? 170 : 200) + "px;height:" + (square ? 170 : 200) + "px;border-radius:50%;background:rgba(255,255,255,.14);border:4px solid " + C.yellow + ";display:flex;align-items:center;justify-content:center'>" + icon(a.icon || "star", C.yellow, square ? 84 : 100, 1.8) + "</div>" +
+      "<div style='font-weight:900;font-size:" + (square ? 72 : 88) + "px;color:" + C.yellow + ";margin-top:30px;line-height:1'>" + esc(a.year || "") + "</div>" +
+      titleTag(a, t.title, C.yellow, fitTitle(a.title, square ? 56 : 64), "margin-top:22px") +
+      (a.sub ? "<div style='font-size:28px;line-height:1.45;color:" + t.muted + ";margin-top:18px;max-width:820px'>" + esc(a.sub) + "</div>" : "") +
+      "</div>" +
+      (a.footer ? "<div style='align-self:stretch;background:rgba(0,0,0,.14);border-radius:20px;padding:22px 30px;font-weight:700;font-size:24px;color:#fff;margin-bottom:30px'>" + esc(a.footer) + "</div>" : "") +
+      "<div style='align-self:stretch;display:flex;justify-content:space-between;align-items:center'>" + logoTag(t.dark, 60) +
+      "<span style='font-weight:700;font-size:22px;color:" + (t.dark ? "#fff" : C.navy) + "'>karimufoundation.org</span></div></div>";
+  };
+
+  // Reel cover: the headline sits inside the centre 4:5 area so the profile
+  // grid (which crops a Reel cover to 1080x1350) still shows all of it.
+  L["reel-cover"] = function (a, t, ctx) {
+    const S = ctx.size;
+    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t) +
+      "<div style='position:absolute;inset:0;background:linear-gradient(to top, rgba(20,45,68,.92) 0%, rgba(20,45,68,.7) 40%, rgba(20,45,68,.1) 66%, rgba(20,45,68,.35) 100%)'></div>" +
+      "<div style='position:absolute;left:80px;right:80px;top:330px'>" + logoTag(true, 56) + "</div>" +
+      "<div style='position:absolute;left:80px;right:80px;bottom:" + (S.h - 1635 + 40) + "px'>" +
+      "<span style='display:inline-flex;align-items:center;gap:12px;background:" + C.yellow + ";color:" + C.navy + ";font-weight:800;font-size:24px;letter-spacing:.1em;text-transform:uppercase;padding:14px 26px;border-radius:999px'>" +
+      "<svg width='22' height='22' viewBox='0 0 24 24'><path d='M7 4.5v15l12.5-7.5z' fill='" + C.navy + "'/></svg>" + esc(a.badge || T.watch) + "</span>" +
+      "<div style='height:30px'></div>" + titleTag(a, "#fff", C.yellow, fitTitle(a.title, 100)) +
+      (a.subtitle ? "<p style='color:rgba(255,255,255,.9);font-size:30px;line-height:1.45;margin-top:18px'>" + esc(a.subtitle) + "</p>" : "") + "</div>";
+  };
+
+  // Story with a call to action: leaves room for Instagram's link sticker.
+  L["story-cta"] = function (a, t, ctx) {
+    return "<div style='position:absolute;left:80px;right:80px;top:250px;bottom:300px;display:flex;flex-direction:column'>" +
+      eyebrowTag(a.eyebrow, t.eyebrow) + "<div style='height:26px'></div>" +
+      titleTag(a, t.title, t.hl, fitTitle(a.title, 96)) +
+      (a.subtitle ? "<p style='color:" + t.text + ";font-size:32px;line-height:1.5;margin-top:20px'>" + esc(a.subtitle) + "</p>" : "") +
+      "<div style='height:40px'></div>" + photo(a.photoFile, a.photoBrief, 560, t) +
+      "<div style='flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px'>" +
+      "<div style='font-weight:800;font-size:26px;letter-spacing:.12em;text-transform:uppercase;color:" + (t.dark ? C.yellow : C.blueText) + "'>" + esc(a.hint || T.tapLink) + "</div>" +
+      "<svg width='44' height='44' viewBox='0 0 24 24' fill='none' stroke='" + (t.dark ? C.yellow : C.blueText) + "' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5v14M6 13l6 6 6-6'/></svg>" +
+      "<div style='height:150px'></div></div>" +
+      logoTag(t.dark, 56, "align-self:center") + "</div>";
+  };
+
+  // Story question: a fact as a question, room for a poll or quiz sticker.
+  L["story-poll"] = function (a, t, ctx) {
+    return rainbow("left:0;right:0;top:0", 12) +
+      "<div style='position:absolute;left:80px;right:80px;top:250px;bottom:300px;display:flex;flex-direction:column'>" +
+      eyebrowTag(a.eyebrow, t.eyebrow) +
+      "<div style='flex:1;display:flex;flex-direction:column;justify-content:center'>" +
+      "<div style='font-weight:900;font-size:120px;line-height:1;color:" + C.yellow + "'>?</div>" +
+      titleTag(a, t.title, t.hl, fitTitle(a.title, 104), "margin-top:20px") +
+      (a.subtitle ? "<p style='color:" + t.text + ";font-size:32px;line-height:1.45;margin-top:24px'>" + esc(a.subtitle) + "</p>" : "") +
+      "<div style='margin-top:60px;font-weight:800;font-size:26px;letter-spacing:.12em;text-transform:uppercase;color:" + C.yellow + ";display:flex;align-items:center;gap:14px'>" + esc(a.hint || T.vote) +
+      "<svg width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='" + C.yellow + "' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'><path d='M12 5v14M6 13l6 6 6-6'/></svg></div>" +
+      "<div style='height:260px'></div></div>" +
+      logoTag(t.dark, 56, "align-self:center") + "</div>";
+  };
+
   const LAYOUTS = Object.keys(L);
+
+  // Canvas sizes. Carousel layouts are feed-only; the single-image layouts
+  // above list the sizes they are designed for.
+  const SIZES = {
+    feed: { key: "feed", w: 1080, h: 1350, label: "Feed 4:5" },
+    square: { key: "square", w: 1080, h: 1080, label: "Square 1:1" },
+    story: { key: "story", w: 1080, h: 1920, label: "Story / Reel 9:16" },
+    landscape: { key: "landscape", w: 1200, h: 628, label: "LinkedIn / Facebook 1.91:1" },
+  };
+  const LAYOUT_SIZES = {
+    "photo-headline": ["feed", "square", "story", "landscape"],
+    "stat-card": ["feed", "square", "story", "landscape"],
+    quote: ["feed", "square", "story"],
+    news: ["feed", "square"],
+    event: ["feed", "square", "story"],
+    award: ["feed", "square"],
+    "reel-cover": ["story"],
+    "story-cta": ["story"],
+    "story-poll": ["story"],
+  };
+  function sizesFor(layout) { return LAYOUT_SIZES[layout] || ["feed"]; }
+
+  // Post formats the Content Studio can request. Keep in sync with
+  // KARIMU_FORMATS in api/generate-posts.js (the server copy the model sees).
+  const CAROUSEL_LAYOUTS = ["cover", "photo-text", "split", "numbered", "icon-list", "side-photo", "stats",
+    "before-after", "phases", "compare", "table", "big-stat", "timeline", "cta", "ba-rows", "ba-full"];
+  const FORMATS = {
+    carousel: { size: "feed", label: "Karimu carousel", layouts: CAROUSEL_LAYOUTS },
+    single: { size: "feed", label: "Karimu single image", layouts: ["photo-headline", "stat-card", "quote", "news", "event", "award", "before-after", "ba-full", "stats", "big-stat", "compare", "timeline"] },
+    square: { size: "square", label: "Karimu square", layouts: ["photo-headline", "stat-card", "quote", "news", "event", "award"] },
+    story: { size: "story", label: "Karimu story", layouts: ["photo-headline", "stat-card", "quote", "event", "story-cta", "story-poll"] },
+    "reel-cover": { size: "story", label: "Karimu Reel cover", layouts: ["reel-cover"] },
+    landscape: { size: "landscape", label: "Karimu LinkedIn / Facebook", layouts: ["photo-headline", "stat-card"] },
+  };
+
+  // The canvas a post renders on (its first slide decides).
+  function postSize(post) {
+    const key = (post && post.size && SIZES[post.size]) ? post.size : "feed";
+    const first = post && post.slides && post.slides[0];
+    if (first) {
+      const allowed = sizesFor(first.layout);
+      const k = allowed.includes(first.size) ? first.size : allowed.includes(key) ? key : allowed[0];
+      return SIZES[k];
+    }
+    return SIZES[key];
+  }
 
   // Default background per layout when the generator leaves `theme` empty.
   const DEFAULT_THEME = {
     cover: "white", "photo-text": "blue", split: "white", numbered: "navy", "icon-list": "white",
     "side-photo": "white", stats: "blue", "before-after": "white", phases: "white", compare: "navy",
     table: "white", "big-stat": "white", timeline: "green", cta: "blue", "ba-rows": "white", "ba-full": "white",
+    "photo-headline": "navy", "stat-card": "blue", quote: "navy", news: "white", event: "navy", award: "green",
+    "reel-cover": "navy", "story-cta": "blue", "story-poll": "navy",
   };
 
   // Which photo fields a layout renders, for upload slots.
@@ -502,6 +780,7 @@
         return out;
       }
       case "numbered": case "icon-list": case "phases": case "compare": case "table": case "big-stat": case "timeline":
+      case "stat-card": case "award": case "story-poll":
         return [];
       default: return [["photoFile", "Photo"]];
     }
@@ -514,8 +793,13 @@
     T = STRINGS[ctx.lang] || STRINGS["pt-BR"];
     const layout = L[a.layout] ? a.layout : "photo-text";
     const theme = THEMES[a.theme] || THEMES[DEFAULT_THEME[layout]] || THEMES.white;
+    // A layout only renders at a size it was designed for; anything else
+    // falls back to its first size.
+    const allowed = sizesFor(layout);
+    const sizeKey = allowed.includes(a.size) ? a.size : allowed.includes(ctx.size) ? ctx.size : allowed[0];
+    ctx = Object.assign({}, ctx, { size: SIZES[sizeKey] });
     const bg = layout === "cover" || layout === "ba-full" ? C.white : theme.bg;
-    return "<div class='kk-root' data-layout='" + layout + "' style='background:" + bg + "'>" + L[layout](a, theme, ctx) + "</div>";
+    return "<div class='kk-root' data-layout='" + layout + "' data-size='" + sizeKey + "' style='width:" + ctx.size.w + "px;height:" + ctx.size.h + "px;background:" + bg + "'>" + L[layout](a, theme, ctx) + "</div>";
   }
 
   // ---------- post level ----------
@@ -528,7 +812,8 @@
     if (!isKarimuPost(post)) return [];
     const n = post.slides.length;
     const lang = post.language === "en-US" ? "en-US" : "pt-BR";
-    return post.slides.map((s, i) => slide(s, { index: i, total: n, isFirst: i === 0, isLast: i === n - 1, lang }));
+    const size = post.size && SIZES[post.size] ? post.size : "feed";
+    return post.slides.map((s, i) => slide(s, { index: i, total: n, isFirst: i === 0, isLast: i === n - 1, lang, size }));
   }
 
   // Upload slots across every slide, keyed "s<index>.<path>".
@@ -566,5 +851,5 @@
     return copy;
   }
 
-  global.KarimuKit = { slide, renderPost, photoSlots, withUploads, isKarimuPost, LAYOUTS, THEMES, ICONS, photoKeys, W, H, colors: C };
+  global.KarimuKit = { slide, renderPost, photoSlots, withUploads, isKarimuPost, LAYOUTS, THEMES, ICONS, photoKeys, SIZES, sizesFor, FORMATS, postSize, W, H, colors: C };
 })(window);

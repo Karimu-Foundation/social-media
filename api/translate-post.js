@@ -15,7 +15,7 @@ const LANG_NAME = { "pt-BR": "Brazilian Portuguese", "en-US": "US English" };
 
 // Keys whose values are design or asset data, never words.
 const FIXED_KEYS = new Set([
-  "layout", "theme", "color", "icon", "highlightColor", "calloutColor", "valueColor", "footerIcon",
+  "layout", "theme", "size", "color", "icon", "badgeIcon", "highlightColor", "calloutColor", "valueColor", "footerIcon",
   "photoId", "photoFile", "photoCredit",
   "beforePhotoId", "beforePhotoFile", "beforePhotoCredit",
   "afterPhotoId", "afterPhotoFile", "afterPhotoCredit",
@@ -98,6 +98,10 @@ Rules:
   Dabil, Dareda Kati, Ayalagaya Secondary School).
 - Keep "[VERIFY: ...]" and "ASSET NEEDED" markers; translate only the text
   inside them.
+- A "quote" is a real person's words. Translate it faithfully and plainly; never
+  add, polish or shorten what they said. Names and roles stay accurate.
+- Dates in "dateTop" / "dateBottom" / "date" follow the target language
+  (Junho → June, Julho 2026 → July 2026).
 - "highlight" must be an exact substring of the translated "title" on the same
   slide (the coloured payoff phrase).
 - Keep each string about as long as the source: on-slide text has fixed space.
