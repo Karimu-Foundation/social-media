@@ -38,6 +38,9 @@ Static site + one serverless function. No build step; Vercel zero-config.
   its format, English slides and a Portuguese version. Loaded right after
   `posts-data.js`. Figures come from the posts themselves; change a number in
   `posts-data.js` (and `07-impact-facts.md`) first, then here.
+- `posts-batch-2026-11.js` — 14 Instagram drafts (two per pillar) written
+  directly in the Karimu templates, English + Portuguese, inserted after the
+  last post of their pillar. Figures carry source tags in `notes`.
 - `api/generate-posts.js` — calls the Anthropic API to draft new posts. Reads
   every file in `knowledge/` at request time and the photo library index.
   Needs `ANTHROPIC_API_KEY`; add `ANTHROPIC_WORKSPACE_ID` too if the key is
