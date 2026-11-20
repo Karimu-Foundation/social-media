@@ -238,7 +238,7 @@
       "<div style='position:absolute;top:56px;left:64px;background:#fff;border-radius:999px;padding:14px 26px 14px 22px;display:flex;align-items:center;gap:12px;box-shadow:0 4px 14px rgba(0,0,0,.12)'>" +
       icon("pin", C.rust, 28, 2.2) + "<span style='font-weight:800;font-size:22px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge || T.pinned) + "</span></div>";
     const img = a.photoFile
-      ? "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px;background:url(\"" + String(a.photoFile).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>"
+      ? "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px;background:url(\"" + String(a.photoFile).replace(/"/g, "%22") + "\") " + (a.photoPosition || "center") + "/cover no-repeat'></div>"
       : "<div style='position:absolute;left:0;top:0;width:" + W + "px;height:" + fit.ph + "px'>" + photo(null, a.photoBrief, fit.ph, THEMES.white, { radius: 0 }) + "</div>";
     return img + badge +
       "<div style='position:absolute;left:0;top:" + fit.ph + "px;width:" + W + "px;height:10px;display:flex'>" + bar + "</div>" +
