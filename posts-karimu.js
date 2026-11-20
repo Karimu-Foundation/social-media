@@ -159,7 +159,7 @@ Em Dabil: 20 pesquisadores, 2 meses, 3.673 famílias, mais de 20 mil pessoas, 3.
 
 Essa evidência abre portas com grandes fundações, porque "ajudamos pessoas" não é algo que um financiador consegue verificar. Um conjunto de dados de antes e depois é.
 
-A conversa completa com Lucy Justin Mhando, nossa Coordenadora Local de Programas, está no YouTube.
+A conversa completa com Lucy Justin Mhando, responsável local pelos programas da Karimu, está no YouTube.
 
 O que os dados de base da sua organização mostrariam?`,
         cta: "Assista à conversa completa",

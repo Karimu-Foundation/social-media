@@ -559,7 +559,7 @@
         "<div style='position:absolute;left:56px;right:56px;top:52px;bottom:44px;display:flex;flex-direction:column'>" +
         eyebrowTag(a.eyebrow, t.eyebrow, 18) +
         "<div style='flex:1;display:flex;align-items:center;gap:44px'>" +
-        "<div style='flex:none;font-weight:900;font-size:190px;line-height:1;letter-spacing:-.05em;color:" + valColor + "'>" + esc(a.value) + "</div>" +
+        "<div style='flex:none;font-weight:900;font-size:" + Math.round(190 * Math.min(1, 4.2 / Math.max(String(a.value || "").length, 1))) + "px;line-height:1;letter-spacing:-.05em;white-space:nowrap;color:" + valColor + "'>" + esc(a.value) + "</div>" +
         "<div><div style='font-weight:800;font-size:38px;line-height:1.2;color:" + t.title + "'>" + esc(a.label) + "</div>" +
         (a.note ? "<div style='font-size:21px;line-height:1.45;color:" + t.muted + ";margin-top:12px'>" + esc(a.note) + "</div>" : "") + "</div></div>" +
         "<div style='display:flex;justify-content:space-between;align-items:center'>" + logoTag(t.dark, 42) +
@@ -567,12 +567,14 @@
     }
     const story = S.key === "story";
     const top = story ? 250 : 72;
-    const valSize = S.key === "square" ? 270 : story ? 360 : 300;
+    // Long values ("US$ 290", "35 mil+") step down so they stay on one line.
+    const vLen = String(a.value || "").length;
+    const valSize = Math.round((S.key === "square" ? 270 : story ? 360 : 300) * Math.min(1, 4.6 / Math.max(vLen, 1)));
     return rainbow("left:0;right:0;top:0", 10) +
       "<div style='position:absolute;left:80px;right:80px;top:" + top + "px;bottom:" + (story ? 300 : 52) + "px;display:flex;flex-direction:column'>" +
       eyebrowTag(a.eyebrow, t.eyebrow) +
       "<div style='flex:1;display:flex;flex-direction:column;justify-content:center'>" +
-      "<div style='font-weight:900;font-size:" + valSize + "px;line-height:.95;letter-spacing:-.05em;color:" + valColor + "'>" + esc(a.value) + "</div>" +
+      "<div style='font-weight:900;font-size:" + valSize + "px;line-height:.95;letter-spacing:-.05em;white-space:nowrap;color:" + valColor + "'>" + esc(a.value) + "</div>" +
       "<div style='font-weight:800;font-size:" + (S.key === "square" ? 46 : story ? 62 : 52) + "px;line-height:1.15;color:" + t.title + ";margin-top:22px;letter-spacing:-.01em'>" + esc(a.label) + "</div>" +
       (a.note ? "<div style='font-size:28px;line-height:1.5;color:" + t.text + ";margin-top:22px;max-width:860px'>" + rich(a.note, t.title) + "</div>" : "") +
       "</div>" +
