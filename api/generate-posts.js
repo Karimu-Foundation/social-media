@@ -295,6 +295,37 @@ full name + school + location.
 `;
 }
 
+// Brief for turning an existing (kraft) post into the Karimu style. The story,
+// caption and figures stay; only the artwork is rebuilt.
+function convertBrief(src, F, slidesWanted, language) {
+  const keep = {
+    title: src.title, pillar: src.pillar, channels: src.channels, funnelStage: src.funnelStage,
+    persona: src.persona, program: src.program, copy: src.copy, cta: src.cta, link: src.link,
+    hashtags: src.hashtags, visual: src.visual, assets: src.assets, altText: src.altText,
+    notes: src.notes, format: src.format, artwork: src.artwork,
+  };
+  return `
+CONVERT AN EXISTING POST to the Karimu style — do not write a new one.
+Target: ${F.label.replace(/^Karimu /, "")}, ${slidesWanted || F.slides[2]} slide(s), in ${language === "en-US" ? "US English" : "Brazilian Portuguese"}.
+
+Rules for the conversion:
+- Return exactly ONE post in the JSON array.
+- Keep the same story, pillar, channels, funnel stage, persona, program, link and
+  notes. Every figure, name, place and date on the slides must already be in the
+  source post below; add nothing new.
+- Keep "copy", "cta", "hashtags" and "altText" exactly as they are when the
+  source is already in ${language === "en-US" ? "English" : "Portuguese"}; otherwise translate them faithfully.
+  You may adjust "altText" so it describes the new artwork.
+- Build "slides" from the source's caption and its "artwork" (on-image text):
+  same message, Karimu layouts. Photo slots: reuse a library photo id only if it
+  genuinely matches; otherwise write a photoBrief.
+- Copy any [VERIFY: ...] and ASSET NEEDED markers across.
+
+SOURCE POST (JSON):
+${JSON.stringify(keep, null, 1)}
+`;
+}
+
 function loadPhotoIndex() {
   try {
     const file = path.join(process.cwd(), "photo-index.json");
@@ -409,6 +440,7 @@ module.exports = async (req, res) => {
     language = "both",
     slideCount = "",
     kformat = "carousel",
+    convertFrom = null,
   } = body;
 
   const isKarimu = style === "karimu";
@@ -421,7 +453,9 @@ module.exports = async (req, res) => {
   const KF = KARIMU_FORMATS[kformat] ? kformat : "carousel";
   const F = KARIMU_FORMATS[KF];
   // Longer formats draft fewer posts per request so the 60-second limit holds.
-  const qty = Math.max(1, Math.min(isKarimu ? F.cap : 10, parseInt(quantity, 10) || 3));
+  // Converting an existing post always returns exactly one post.
+  const converting = isKarimu && convertFrom && typeof convertFrom === "object";
+  const qty = converting ? 1 : Math.max(1, Math.min(isKarimu ? F.cap : 10, parseInt(quantity, 10) || 3));
   const wanted = parseInt(slideCount, 10) || 0;
   const slidesWanted = wanted ? Math.max(F.slides[0], Math.min(F.slides[1], wanted)) : 0;
 
@@ -430,7 +464,7 @@ module.exports = async (req, res) => {
   const photoById = {};
   photos.forEach((p) => { photoById[p.id] = p; });
 
-  const requestBrief = `
+  const requestBrief = converting ? convertBrief(convertFrom, F, slidesWanted, draftLanguage) : `
 New content request from the social media team:
 - Number of posts requested: ${qty}
 - Channel(s): ${channels.length ? channels.join(", ") : "agent's choice, pick what fits the topic"}
@@ -466,6 +500,7 @@ ${isKarimu ? karimuSchemaInstructions(photos, draftLanguage, slidesWanted, KF) :
     }
 
     if (!Array.isArray(posts)) posts = [posts];
+    if (converting) posts = posts.slice(0, 1);
 
     const stamped = posts.map((p, i) => {
       if (isKarimu) return stampKarimu(p, i, photoById, draftLanguage, KF);

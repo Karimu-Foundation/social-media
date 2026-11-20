@@ -425,6 +425,141 @@ function renderAll() {
   renderOverview();
   renderPillars();
   sizeArtThumbs();
+  updateConvertAllButton();
+}
+
+// ---- convert older (kraft) drafts to the Karimu style ----
+// Kraft format → Karimu format. Video-only and WhatsApp posts have no artwork
+// to convert.
+function karimuFormatFor(post) {
+  const f = String(post.format || "").toLowerCase();
+  if (/whatsapp|long-form/.test(f)) return null;
+  if (/carousel/.test(f)) return "carousel";
+  if (/single-stat/.test(f)) return "square";
+  if (/reel|short/.test(f)) return "reel-cover";
+  if (/story/.test(f)) return "story";
+  if (/linkedin/.test(f) || (post.channels || []).join() === "LinkedIn") return "landscape";
+  return "single";
+}
+
+const KRAFT_BACKUP_FIELDS = ["style", "format", "artwork", "copy", "cta", "hashtags", "altText", "visual", "assets", "formatReason"];
+
+function canConvert(post) {
+  return !!(post && post.generated && post.style !== "karimu" && karimuFormatFor(post));
+}
+
+// Send the source post without photos: uploads stay in the browser.
+function sourceForConversion(post) {
+  const src = Object.assign({}, post);
+  delete src.images;
+  if (src.artwork) {
+    src.artwork = Object.assign({}, src.artwork);
+    Object.keys(src.artwork).forEach((k) => { if (/File$/.test(k)) delete src.artwork[k]; });
+  }
+  return src;
+}
+
+// Converts one post in place (English first, then Portuguese) and saves it.
+// The kraft version is kept in post.kraftBackup so the conversion can be undone.
+async function convertToKarimu(id, onStatus) {
+  const post = POSTS.find((p) => p.id === id);
+  if (!canConvert(post)) throw new Error("This post can't be converted.");
+  const kformat = karimuFormatFor(post);
+  onStatus && onStatus("Rebuilding the artwork in the Karimu style…");
+  const resp = await fetch("/api/generate-posts", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ style: "karimu", kformat, language: "en-US", quantity: 1, convertFrom: sourceForConversion(post) }),
+  });
+  const data = await resp.json();
+  if (!resp.ok) throw new Error(data.error || "The generator returned an error.");
+  const draft = (data.posts || [])[0];
+  if (!draft || !Array.isArray(draft.slides) || !draft.slides.length) throw new Error("No artwork came back.");
+
+  const backup = {};
+  KRAFT_BACKUP_FIELDS.forEach((k) => { backup[k] = post[k]; });
+  Object.assign(post, {
+    style: "karimu", kformat: draft.kformat, size: draft.size, language: "en-US", versions: {},
+    slides: draft.slides, copy: draft.copy || post.copy, cta: draft.cta || post.cta,
+    hashtags: Array.isArray(draft.hashtags) && draft.hashtags.length ? draft.hashtags : post.hashtags,
+    altText: draft.altText || post.altText, visual: draft.visual || post.visual, assets: draft.assets || post.assets,
+    kraftBackup: backup, convertedAt: new Date().toISOString(),
+  });
+
+  // Photos the team uploaded for the kraft card go to the first slide.
+  const stored = ASSETS[id] || {};
+  ["photoFile", "beforePhotoFile", "afterPhotoFile"].forEach((k) => {
+    if (stored[k] && !stored["s0." + k]) storeAsset(id, "s0." + k, stored[k]);
+  });
+
+  onStatus && onStatus("Writing the Português version…");
+  try {
+    saveVersion(post, "pt-BR", await requestTranslation(post, "pt-BR"));
+  } catch (e) {
+    // The English conversion stands; the modal offers "+ Create Português version".
+  }
+  saveGenerated(loadGenerated().map((p) => (p.id === id ? post : p)));
+}
+
+function undoConversion(id) {
+  const post = POSTS.find((p) => p.id === id);
+  if (!post || !post.kraftBackup) return;
+  if (!confirm("Go back to the kraft version of this post? The Karimu artwork and its Português version will be removed.")) return;
+  const b = post.kraftBackup;
+  // Clear every field the conversion touched, then restore what the kraft
+  // post had. Saved backups lose keys that were undefined (JSON), so a field
+  // missing from the backup means the kraft post did not have it.
+  ["kformat", "size", "language", "versions", "slides", "kraftBackup", "convertedAt"].concat(KRAFT_BACKUP_FIELDS).forEach((k) => { delete post[k]; });
+  KRAFT_BACKUP_FIELDS.forEach((k) => { if (b[k] !== undefined) post[k] = b[k]; });
+  saveGenerated(loadGenerated().map((p) => (p.id === id ? post : p)));
+  renderAll();
+  openModal(id);
+}
+
+async function convertOne(id) {
+  const btn = document.getElementById("convert-btn");
+  const note = document.getElementById("convert-note");
+  if (btn) btn.disabled = true;
+  try {
+    await convertToKarimu(id, (m) => { if (note) { note.textContent = m; note.classList.remove("error"); } });
+    renderAll();
+    openModal(id, false, "en-US");
+  } catch (e) {
+    if (note) { note.textContent = "Couldn't convert: " + e.message; note.classList.add("error"); }
+    if (btn) btn.disabled = false;
+  }
+}
+
+function updateConvertAllButton() {
+  const btn = document.getElementById("convert-all-btn");
+  if (!btn) return;
+  const n = POSTS.filter(canConvert).length;
+  btn.style.display = n ? "" : "none";
+  btn.textContent = "Convert " + n + " to Karimu";
+}
+
+async function convertAll() {
+  const ids = POSTS.filter(canConvert).map((p) => p.id);
+  if (!ids.length) return;
+  if (!confirm("Convert " + ids.length + " older post" + (ids.length === 1 ? "" : "s") + " to the Karimu style, in English and Português?\n\nEach one takes about a minute. Captions and figures stay the same; every post can be switched back with \"Undo conversion\".")) return;
+  const btn = document.getElementById("convert-all-btn");
+  btn.disabled = true;
+  const failed = [];
+  for (let i = 0; i < ids.length; i++) {
+    const title = (POSTS.find((p) => p.id === ids[i]) || {}).title || ids[i];
+    try {
+      await convertToKarimu(ids[i], (m) => { btn.textContent = (i + 1) + "/" + ids.length + " · " + m.replace(/…$/, ""); });
+    } catch (e) {
+      failed.push(title + " (" + e.message + ")");
+    }
+    renderAll();
+    btn.disabled = true;
+  }
+  btn.disabled = false;
+  updateConvertAllButton();
+  alert(failed.length
+    ? "Converted " + (ids.length - failed.length) + " of " + ids.length + ". These failed and can be retried from the post:\n\n" + failed.join("\n")
+    : "Converted " + ids.length + " post" + (ids.length === 1 ? "" : "s") + " to the Karimu style.");
 }
 
 window.addEventListener("resize", sizeArtThumbs);
@@ -529,6 +664,18 @@ function openModal(id, focusRevision, lang) {
     uploadBody = `<div class="upload-row"><span class="upload-state">The ${escapeHTML(post.format)} template is type-only — it has no photo slot to fill.</span></div>`;
   }
 
+  const convertSection = canConvert(rawPost) ? `
+    <section>
+      <h4>Karimu style</h4>
+      <div class="actions">
+        <button class="small primary" id="convert-btn" onclick="convertOne('${rawPost.id}')">✨ Convert to Karimu style (English + Português)</button>
+        <span class="artwork-note" id="convert-note">Keeps the caption and figures; rebuilds the artwork as a ${escapeHTML((KarimuKit.FORMATS[karimuFormatFor(rawPost)] || {}).label || "Karimu post")}.</span>
+      </div>
+    </section>` : (rawPost && rawPost.kraftBackup ? `
+    <section>
+      <div class="actions"><button class="small ghost" onclick="undoConversion('${rawPost.id}')">↩ Undo conversion (back to kraft)</button></div>
+    </section>` : "");
+
   const uploadSection = `
     <section>
       <h4>Photos <span style="text-transform:none; letter-spacing:0; font-weight:400;">(stored in this browser only — confirm consent and the dignity / child-safety rules before anything is published)</span></h4>
@@ -565,6 +712,7 @@ function openModal(id, focusRevision, lang) {
       ${shotsTable}
 
       ${artworkSection}
+      ${convertSection}
       ${uploadSection}
 
       ${gallery}
