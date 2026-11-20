@@ -489,9 +489,11 @@
   // ctx.size and lays itself out for it. Story layouts keep text out of the
   // top 250px and bottom 300px, where Instagram puts its own UI.
 
-  function bgPhoto(file, brief, css, t) {
+  // `pos` is a CSS background-position, e.g. "center 30%" to keep a face
+  // in frame when a portrait photo fills a wide slot.
+  function bgPhoto(file, brief, css, t, pos) {
     if (file) {
-      return "<div style='position:absolute;" + css + ";background:url(\"" + String(file).replace(/"/g, "%22") + "\") center/cover no-repeat'></div>";
+      return "<div style='position:absolute;" + css + ";background:url(\"" + String(file).replace(/"/g, "%22") + "\") " + (pos || "center") + "/cover no-repeat'></div>";
     }
     return "<div style='position:absolute;" + css + ";display:flex'>" +
       "<div class='kk-ph' style='flex:1;border-radius:0;border-color:#B9C6D6;background:#F4F7FB;color:" + C.gray + "'>" +
@@ -599,14 +601,14 @@
       return n <= 70 ? base : n <= 110 ? Math.round(base * 0.86) : Math.round(base * 0.74);
     };
     if (S.key === "square") {
-      return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:430px;height:" + S.h + "px", t) +
+      return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:430px;height:" + S.h + "px", t, a.photoPosition || "center 18%") +
         "<div style='position:absolute;left:490px;right:64px;top:72px;bottom:52px;display:flex;flex-direction:column'>" +
         eyebrowTag(a.eyebrow, t.eyebrow) + "<div style='flex:1;display:flex;flex-direction:column;justify-content:center'>" + body(qSize(44)) + "</div>" +
         logoTag(t.dark, 56) + "</div>";
     }
     const story = S.key === "story";
     const photoH = story ? 820 : 560;
-    return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:" + S.w + "px;height:" + photoH + "px", t) +
+    return bgPhoto(a.photoFile, a.photoBrief, "left:0;top:0;width:" + S.w + "px;height:" + photoH + "px", t, a.photoPosition || "center 18%") +
       rainbow("left:0;right:0;top:" + photoH + "px", 10) +
       "<div style='position:absolute;left:80px;right:80px;top:" + (photoH + 60) + "px;bottom:" + (story ? 300 : 52) + "px;display:flex;flex-direction:column'>" +
       eyebrowTag(a.eyebrow, t.eyebrow) + "<div style='height:30px'></div>" + body(qSize(story ? 64 : 58)) +
