@@ -406,15 +406,16 @@ module.exports = async (req, res) => {
     dateRange = "",
     notes = "",
     style = "kraft",
-    language = "pt-BR",
+    language = "both",
     slideCount = "",
     kformat = "carousel",
   } = body;
 
   const isKarimu = style === "karimu";
-  // "both" drafts the Portuguese version here; the browser then asks
-  // /api/translate-post for the English one, so each call stays under 60s.
-  const draftLanguage = language === "en-US" ? "en-US" : "pt-BR";
+  // English is the primary language. "both" drafts English here; the
+  // browser then asks /api/translate-post for the Portuguese version, so
+  // each call stays under 60s. Only an explicit "pt-BR" drafts Portuguese.
+  const draftLanguage = language === "pt-BR" ? "pt-BR" : "en-US";
   // Carousels are several times longer than a kraft card, and the function
   // has 60 seconds, so the pinned-post style drafts at most 2 per request.
   const KF = KARIMU_FORMATS[kformat] ? kformat : "carousel";

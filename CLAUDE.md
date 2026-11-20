@@ -67,10 +67,11 @@ Static site + one serverless function. No build step; Vercel zero-config.
   per format (carousel 2, story 3, others 4) so the 60-second limit holds.
 - **Bilingual carousels.** A Karimu post has `language` (the version it was
   drafted in) and `versions: { "en-US": { title, copy, cta, hashtags,
-  altText, slides } }` for the other one. With `language: "both"` the
-  generator drafts Portuguese and the browser then calls
-  `api/translate-post.js` for English (a second call, so each stays under
-  60s). The translator only replaces strings: layouts, themes, colours, icons
+  altText, slides } }` for the other one. English is the primary
+  language: with `language: "both"` (the default) the generator drafts English
+  and the browser then calls `api/translate-post.js` for Portuguese (a second
+  call, so each stays under 60s). English always comes first in tabs, badges
+  and zip folders; the app UI is English. The translator only replaces strings: layouts, themes, colours, icons
   and photos are copied from the source server-side. Photos, uploads and
   approval state are shared by both versions. `lib/anthropic.js` holds the
   shared API call. The header's language filter shows each card in that

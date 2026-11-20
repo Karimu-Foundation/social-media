@@ -246,8 +246,11 @@ function langOf(post) {
   return post.style === "karimu" ? "pt-BR" : "en-US";
 }
 
+// English always comes first (tabs, badges, zip folders), whatever language
+// the post was drafted in.
 function languagesOf(post) {
-  return [langOf(post)].concat(Object.keys(post.versions || {}).filter((l) => LANGS[l] && l !== langOf(post)));
+  const all = [langOf(post)].concat(Object.keys(post.versions || {}).filter((l) => LANGS[l] && l !== langOf(post)));
+  return all.sort((a, b) => (a === "en-US" ? -1 : b === "en-US" ? 1 : 0));
 }
 
 function inLanguage(post, lang) {
@@ -266,7 +269,8 @@ function inLanguage(post, lang) {
 
 // The version a card shows: the language filter's, when the post has it.
 function displayLanguage(post) {
-  return filters.language !== "all" && languagesOf(post).includes(filters.language) ? filters.language : langOf(post);
+  if (filters.language !== "all" && languagesOf(post).includes(filters.language)) return filters.language;
+  return languagesOf(post)[0]; // English when the post has it
 }
 
 function otherLanguage(lang) {
@@ -978,9 +982,9 @@ function openRequestModal() {
         <div class="field-row" id="req-karimu-opts">
           <label>Language
             <select id="req-language">
-              <option value="both">Português + English (both)</option>
-              <option value="pt-BR">Português (Brasil)</option>
-              <option value="en-US">English (US)</option>
+              <option value="both">English + Português (both)</option>
+              <option value="en-US">English only</option>
+              <option value="pt-BR">Português only</option>
             </select>
           </label>
           <label>Format
@@ -1189,14 +1193,14 @@ async function submitRequest() {
     // New drafts always start as pending and flagged, regardless of what the model set.
     newPosts.forEach((p) => { p.flagged = true; });
 
-    // Both languages: the generator wrote Portuguese, now get the English
-    // version of each carousel. A failed translation keeps the post; the
-    // modal offers "+ Create English version" to retry.
+    // Both languages: the generator wrote English, now get the Portuguese
+    // version of each post. A failed translation keeps the post; the
+    // modal offers "+ Create Português version" to retry.
     const translateFailures = [];
     if (style === "karimu" && language === "both") {
       for (let i = 0; i < newPosts.length; i++) {
         const p = newPosts[i];
-        statusBox.textContent = "Writing the English version" + (newPosts.length > 1 ? " of post " + (i + 1) + " of " + newPosts.length : "") + "…";
+        statusBox.textContent = "Writing the " + LANGS[otherLanguage(langOf(p))].name + " version" + (newPosts.length > 1 ? " of post " + (i + 1) + " of " + newPosts.length : "") + "…";
         try {
           saveVersion(p, otherLanguage(langOf(p)), await requestTranslation(p, otherLanguage(langOf(p))));
         } catch (e) {
@@ -1228,7 +1232,7 @@ async function submitRequest() {
     closeRequestModal();
     renderAll();
     if (translateFailures.length) {
-      alert("The English version could not be written for: " + translateFailures.join(", ") + ".\n\nOpen the post and use \"+ Create English version\" to try again.");
+      alert("The Português version could not be written for: " + translateFailures.join(", ") + ".\n\nOpen the post and use \"+ Create Português version\" to try again.");
     }
   } catch (e) {
     statusBox.style.display = "none";

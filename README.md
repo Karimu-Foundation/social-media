@@ -100,10 +100,10 @@ caption as a text file, ready for Instagram. The layouts and rules are in
 `knowledge/10-karimu-carousel-style.md`; the renderer is `karimu-kit.js`.
 
 Each carousel can have a **Portuguese and an English version** of the same
-slides. *Português + English* is the default in the request form: the
-Portuguese version is drafted first and the English one is written right
+slides. *English + Português* is the default in the request form: English is the
+primary version and is drafted first; the Portuguese one is written right
 after, with the same layouts, photos and figures. Use the **language filter**
-in the header to see the queue in one language, the **Português / English**
+in the header to see the queue in one language, the **English / Português**
 tabs in a post to switch versions, and **+ Create English version** (or
 Portuguese) to add a missing one later. The zip download holds both versions
 in `pt/` and `en/` folders. One approval covers both versions.
