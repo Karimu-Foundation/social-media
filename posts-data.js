@@ -382,7 +382,7 @@ Pre-registration is open now. Link in bio for dates and details.`,
     altText: "Karimu volunteer trip participants with Tanzanian community members, with text announcing 2027 trip registration is open.",
     notes: "Exact departure dates withheld pending confirmation — see [VERIFY] in 07-impact-facts.md. Direct specific questions to marianne.kentstoll@karimufoundation.org rather than stating departure dates.",
     images: [
-      { thumb: "images/p13-thumb.jpg", full: "images/p13-full.jpg", caption: "2025 July Family Trip — welcome ceremony (representative past-trip photo, not the 2027 trip itself).", needsConfirmation: true },
+      { thumb: "images/p13-thumb.jpg", full: "images/p13-full.jpg", caption: "2025 July Family Trip — a volunteer and a student making bricks together (representative past-trip photo, not the 2027 trip itself).", needsConfirmation: true },
     ],
   },
   {
