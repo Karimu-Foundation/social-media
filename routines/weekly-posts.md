@@ -76,9 +76,20 @@ For each post:
 
 ## 4. Photos from the Drive
 
-Photos come from the shared drive **"Karimu: Pictures"** (root id
-`0AFQB35McY4XQUk9PVA`; newest material often in the folder
-`1FKHWhDMkkdfENj3lUVS0JIxny7V2Bjud`). For each photo slot:
+Photos come from two places — search **both**:
+- the shared drive **"Karimu: Pictures"** (root id `0AFQB35McY4XQUk9PVA`;
+  newest material often in the folder `1FKHWhDMkkdfENj3lUVS0JIxny7V2Bjud`);
+  files are usually named `YYYY-MM-DD-Ward-Place-Subject`;
+- the **COMMS** folder `1X5X3W2-hebpbOCoU_n2286aL6E2EM9ES` (shared drive
+  "2026 September Volunteer Trip"), search with
+  `'1X5X3W2-hebpbOCoU_n2286aL6E2EM9ES' in ancestors`. Its subfolders —
+  "Volunteers Coverage - Trip Oct 2026", "Impact Stories Series - Photos and
+  Videos" and any new ones — hold the comms team's own selections. Files there
+  are camera names (`IMG_9834.HEIC`), so take date and context from the
+  **subfolder name**, and record ward/place as "Not recorded" unless the photo
+  itself or the folder makes it certain. Skip videos (`.MOV`).
+
+For each photo slot:
 1. Search by ward, place, project and year; prefer the last 12 months.
 2. **Look at every candidate before using it.** Reject: wrong ward or project
    (an Ayalagaya photo never illustrates Arri or Dabil), children in
@@ -90,8 +101,11 @@ Photos come from the shared drive **"Karimu: Pictures"** (root id
    captions, even if the Drive file name has them.
 4. Portrait photos in wide slots: set `photoPosition` (e.g. `"center 15%"`) so
    faces stay in frame.
-5. HEIC files cannot be used; pick another photo. If nothing fits, leave the
-   slot as a `photoBrief` and write `ASSET NEEDED: ...` in `assets`.
+5. **HEIC (iPhone) photos are fine**: run `pip install pillow-heif` once, then
+   open them with `pillow_heif.register_heif_opener()` before
+   `PIL.Image.open`, apply `ImageOps.exif_transpose`, and save as JPEG. If
+   nothing fits, leave the slot as a `photoBrief` and write
+   `ASSET NEEDED: ...` in `assets`.
 
 ## 5. Build, check and publish to the Content Studio
 
