@@ -145,11 +145,11 @@ Tumaini Joseph is part of Karimu's Financial Services team in Tanzania. Across t
       cta: "Tap the link / follow",
       hashtags: [],
       visual: "Story 9:16, 3 frames: intro (portrait) → poll sticker → answer with link sticker. Add the poll and link stickers in Instagram.",
-      assets: "ASSET NEEDED: portrait of Tumaini Joseph with a savings group.",
+      assets: "Library photo: staff portrait of Tumaini Joseph (March 2026, Drive > Karimu: Pictures > Karimu staff; edited background).",
       altText: "Story introducing Tumaini Joseph, from the Financial Services team, and the 100% on-time repayment of Karimu's savings-group loans.",
       notes: "100% on time vs ~10% unpaid nationally [AR25 p.22] [NL Jul-26]. Tumaini Joseph is on the named-people list (Financial Services); confirm consent, current role and how they want to be introduced. Poll options: 50% / 75% / 100%.",
       slides: [
-        { layout: "photo-headline", badge: "Karimu Talks", badgeIcon: "people", eyebrow: "Financial Services", title: "Meet Tumaini Joseph.", highlight: "Tumaini Joseph.", subtitle: "Karimu's Financial Services team, working with savings groups in Tanzania.", photoBrief: "Tumaini Joseph with a savings group meeting, faces visible, eye level" },
+        { layout: "photo-headline", badge: "Karimu Talks", badgeIcon: "people", eyebrow: "Financial Services", title: "Meet Tumaini Joseph.", highlight: "Tumaini Joseph.", subtitle: "Karimu's Financial Services team, working with savings groups in Tanzania.", photoFile: L + "1OZ-7lLU1U.jpg", photoBrief: "Tumaini Joseph with a savings group meeting, faces visible, eye level" },
         { layout: "story-poll", theme: "navy", eyebrow: "Quick question", title: "How many of our groups' loans are repaid on time?", highlight: "on time?", subtitle: "Across Tanzania, about 1 in 10 group loans go unpaid." },
         { layout: "stat-card", theme: "blue", eyebrow: "The answer", value: "100%", label: "of loans to Karimu's savings groups, repaid on time.", note: "Built on transparency, training and community accountability.", source: "Karimu Annual Report 2025" },
       ],
@@ -162,7 +162,7 @@ Tumaini Joseph faz parte da equipe de Serviços Financeiros da Karimu na Tanzân
         hashtags: [],
         altText: "Story apresentando Tumaini Joseph, da equipe de Serviços Financeiros, e os 100% de pagamento em dia dos empréstimos dos grupos de poupança da Karimu.",
         slides: [
-          { layout: "photo-headline", badge: "Karimu Talks", badgeIcon: "people", eyebrow: "Serviços financeiros", title: "Conheça Tumaini Joseph.", highlight: "Tumaini Joseph.", subtitle: "Equipe de Serviços Financeiros da Karimu, junto aos grupos de poupança na Tanzânia.", photoBrief: "Tumaini Joseph numa reunião de grupo de poupança, rostos visíveis, na altura dos olhos" },
+          { layout: "photo-headline", badge: "Karimu Talks", badgeIcon: "people", eyebrow: "Serviços financeiros", title: "Conheça Tumaini Joseph.", highlight: "Tumaini Joseph.", subtitle: "Equipe de Serviços Financeiros da Karimu, junto aos grupos de poupança na Tanzânia.", photoFile: L + "1OZ-7lLU1U.jpg", photoBrief: "Tumaini Joseph numa reunião de grupo de poupança, rostos visíveis, na altura dos olhos" },
           { layout: "story-poll", theme: "navy", eyebrow: "Pergunta rápida", title: "Quantos empréstimos dos nossos grupos são pagos em dia?", highlight: "pagos em dia?", subtitle: "Na Tanzânia, cerca de 1 em cada 10 empréstimos de grupo não é pago." },
           { layout: "stat-card", theme: "blue", eyebrow: "A resposta", value: "100%", label: "dos empréstimos aos grupos de poupança da Karimu, pagos em dia.", note: "Com base em transparência, formação e responsabilidade comunitária.", source: "Relatório Anual Karimu 2025" },
         ],
