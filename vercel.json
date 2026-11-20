@@ -2,6 +2,9 @@
   "functions": {
     "api/generate-posts.js": {
       "maxDuration": 60
+    },
+    "api/translate-post.js": {
+      "maxDuration": 60
     }
   }
 }

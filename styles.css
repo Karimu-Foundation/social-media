@@ -396,3 +396,31 @@ button.ghost.danger:hover { border-color: var(--flagged); background: #fbe9e1; }
 .upload-state { font-size: 11.5px; color: var(--muted); }
 .artwork-note.error { color: var(--flag, #BF4526); }
 .req-hint { font-size: 11.5px; color: var(--muted); margin-top: 4px; }
+
+/* Karimu pinned-post carousels: a horizontal strip of 1080x1350 slides,
+   each zoomed down to a 260px-wide preview. */
+.kk-strip {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 12px;
+  background: #E8EDF3;
+  border-radius: 10px;
+  scroll-snap-type: x mandatory;
+}
+.kk-slide { flex: none; width: 260px; margin: 0; scroll-snap-align: start; }
+.kk-slide-box { width: 260px; height: 325px; overflow: hidden; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,.12); background: #fff; }
+.kk-slide-scaler { zoom: 0.24074; } /* 260 / 1080 */
+.kk-slide figcaption { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 11.5px; color: var(--muted); }
+.card-thumb-art { position: relative; }
+.badge.slide-count { position: absolute; right: 8px; bottom: 8px; background: rgba(43,91,126,.92); color: #fff; border-color: transparent; }
+#req-karimu-opts { display: flex; gap: 14px; flex-wrap: wrap; }
+#req-karimu-opts label { flex: 1; min-width: 180px; }
+
+/* Language versions (Karimu carousels: PT + EN) */
+.badge.lang { color: #2B5B7E; border-color: #2B5B7E; background: #EEF3F9; }
+.lang-tabs { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+.lang-tab { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 12px; border-radius: 999px; border: 1px solid #C9D3DF; background: #fff; color: #2B5B7E; cursor: pointer; }
+.lang-tab.active { background: #2B5B7E; border-color: #2B5B7E; color: #fff; }
+.lang-tab.add { border-style: dashed; color: var(--muted); }
+.lang-tab:disabled { opacity: .6; cursor: progress; }

@@ -89,6 +89,32 @@ Photos are committed rather than linked from Drive on purpose: Drive URLs would
 taint the canvas and break the PNG export, and would require every viewer to be
 signed into Google.
 
+## Karimu pinned-post carousels ("Posts fixados")
+
+The request form has a **Visual style** picker. *Karimu pinned-post carousel*
+drafts a full carousel (cover, story, numbers, CTA) in the clean style of the
+approved pinned posts, in Portuguese or English, plus the caption. Open the
+post to see every slide, upload photos per slide, **Copy caption + hashtags**,
+and **Download all slides (.zip)**: one 1080×1350 PNG per slide plus the
+caption as a text file, ready for Instagram. The layouts and rules are in
+`knowledge/10-karimu-carousel-style.md`; the renderer is `karimu-kit.js`.
+
+Each carousel can have a **Portuguese and an English version** of the same
+slides. *English + Português* is the default in the request form: English is the
+primary version and is drafted first; the Portuguese one is written right
+after, with the same layouts, photos and figures. Use the **language filter**
+in the header to see the queue in one language, the **English / Português**
+tabs in a post to switch versions, and **+ Create English version** (or
+Portuguese) to add a missing one later. The zip download holds both versions
+in `pt/` and `en/` folders. One approval covers both versions.
+
+The same style comes in other **formats**, picked in the request form:
+single image (feed 4:5), square (1:1), Story (9:16, 1–5 frames), Reel cover
+(9:16) and LinkedIn / Facebook (1200×628). Each has its own templates —
+photo + headline, single figure, quote, news, event, award, Story with link,
+Story poll — listed in `knowledge/10-karimu-carousel-style.md`. Every format
+works in both languages and downloads at its exact size.
+
 ## Removing posts
 
 Any post can be removed with the 🗑 button on its card or in its modal.

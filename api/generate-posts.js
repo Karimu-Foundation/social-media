@@ -11,6 +11,7 @@
 
 const fs = require("fs");
 const path = require("path");
+const { callClaude, parseJSON } = require("../lib/anthropic");
 
 const KNOWLEDGE_FILES = [
   "SYSTEM_PROMPT.md",
@@ -24,7 +25,54 @@ const KNOWLEDGE_FILES = [
   "01-brand-identity.md",
   "02-audience-personas.md",
   "09-visual-system.md",
+  "10-karimu-carousel-style.md",
 ];
+
+// Layouts karimu-kit.js can render. Anything else the model returns is
+// mapped to "photo-text" rather than rendered blank.
+const KARIMU_LAYOUTS = [
+  "cover", "photo-text", "split", "numbered", "icon-list", "side-photo", "stats",
+  "before-after", "phases", "compare", "table", "big-stat", "timeline", "cta",
+  "ba-rows", "ba-full",
+  "photo-headline", "stat-card", "quote", "news", "event", "award",
+  "reel-cover", "story-cta", "story-poll",
+];
+
+// Post formats for the Karimu style. Keep in sync with FORMATS in
+// karimu-kit.js. `slides` is [min, max, default range shown to the model];
+// `cap` is how many posts one request may draft inside the 60s limit.
+const KARIMU_FORMATS = {
+  carousel: { size: "feed", label: "Karimu carousel", slides: [3, 8, "5 to 7"], cap: 2,
+    layouts: ["cover", "photo-text", "split", "numbered", "icon-list", "side-photo", "stats", "before-after", "phases", "compare", "table", "big-stat", "timeline", "cta", "ba-rows", "ba-full"],
+    rules: `- Slide 1 is always "cover". End with "cta" or a strong summary slide.
+- No two neighbouring slides share a theme. Covers are always white.` },
+  single: { size: "feed", label: "Karimu single image", slides: [1, 1, "1"], cap: 4,
+    layouts: ["photo-headline", "stat-card", "quote", "news", "event", "award", "before-after", "ba-full", "stats", "big-stat", "compare", "timeline"],
+    rules: `- One 1080x1350 image that works on its own in the feed: no page counter, no "swipe".
+- Pick the layout by the story: a striking photo → photo-headline; one figure → stat-card;
+  someone's words → quote; something that just happened → news; a date → event;
+  an award → award; a transformation → before-after or ba-full.` },
+  square: { size: "square", label: "Karimu square", slides: [1, 1, "1"], cap: 4,
+    layouts: ["photo-headline", "stat-card", "quote", "news", "event", "award"],
+    rules: `- One 1080x1080 image. Keep text shorter than on a 4:5 post: headline ≤ 9 words.` },
+  story: { size: "story", label: "Karimu story", slides: [1, 5, "1 to 3"], cap: 3,
+    layouts: ["photo-headline", "stat-card", "quote", "event", "story-cta", "story-poll"],
+    rules: `- 1080x1920 frames shown one after another. Instagram covers the top 250px and
+  bottom 300px; the layouts already keep text out of them.
+- A sequence tells one idea: e.g. story-poll (question) → stat-card (answer) → story-cta.
+- story-cta and story-poll leave empty space for Instagram's link / poll sticker,
+  which the team adds in the app. Say which sticker in "visual".` },
+  "reel-cover": { size: "story", label: "Karimu Reel cover", slides: [1, 1, "1"], cap: 4,
+    layouts: ["reel-cover"],
+    rules: `- The cover frame of a Reel. The headline is the hook, ≤ 8 words. Instagram crops the
+  cover to 4:5 in the profile grid; the layout keeps the text inside that area.
+- Use "visual" for the Reel itself: the hook in the first 2 seconds, burned-in
+  captions, one idea, and the shot list.` },
+  landscape: { size: "landscape", label: "Karimu LinkedIn / Facebook", slides: [1, 1, "1"], cap: 4,
+    layouts: ["photo-headline", "stat-card"],
+    rules: `- One 1200x628 image for a LinkedIn or Facebook post. Professional tone: lead with
+  the result and the method. Headline ≤ 12 words. Caption may be longer (≤ 150 words).` },
+};
 
 function loadKnowledge() {
   return KNOWLEDGE_FILES.map((name) => {
@@ -138,6 +186,115 @@ Hard rules (from the knowledge base, restated for emphasis):
 `;
 }
 
+// Schema for the Karimu pinned-post carousel style (knowledge file 10).
+function karimuSchemaInstructions(photos, language, slideCount, kformat) {
+  const pt = language !== "en-US";
+  const F = KARIMU_FORMATS[kformat] || KARIMU_FORMATS.carousel;
+  const slides = F.slides[1] === 1
+    ? "exactly 1 slide"
+    : slideCount
+      ? `exactly ${slideCount} ${kformat === "story" ? "frame" : "slide"}(s)`
+      : `${F.slides[2]} ${kformat === "story" ? "frames" : "slides"} (pick what the story needs; never pad)`;
+  return `
+VISUAL STYLE FOR THIS REQUEST: the Karimu style described in
+10-karimu-carousel-style.md. Ignore the kraft format catalogue and the kraft
+"artwork" shapes for this request.
+
+FORMAT: ${F.label.replace(/^Karimu /, "")} (${F.size}). Every post has ${slides}.
+Allowed layouts for this format: ${F.layouts.join(", ")}. Use no other layout.
+${F.rules}
+
+LANGUAGE: write every text field (title, copy, cta, slides, altText, notes,
+visual, assets, formatReason) in ${pt ? "Brazilian Portuguese (pt-BR). This overrides the US English rule in the knowledge base. Use Brazilian number format: 4,9% · 3.236 · 14 mil+ · US$ 1. Translate approved figures faithfully; never round or change them." : "US English, USD."}
+Hashtags may mix ${pt ? "Portuguese and English" : "English"}.
+
+You must respond with ONLY a JSON array (no prose, no markdown fences) of post
+objects. Each object must have exactly these fields:
+
+{
+  "style": "karimu",
+  "format": "${F.label}",
+  "pillar": string,               // one of the content pillars in 05-content-pillars.md
+  "channels": string[],
+  "title": string,                // short internal working title
+  "funnelStage": "Attract" | "Trust" | "Act",
+  "persona": string,
+  "program": string,
+  "copy": string,                 // ready-to-paste caption, ≤ 120 words, line breaks allowed, ends with the CTA
+  "cta": string,                  // follow / share / save / read / comment — never "Donate now" unless the request is explicitly a fundraising campaign
+  "link": string,                 // "n/a — Link in bio" if none
+  "hashtags": string[],           // 3–6
+  "visual": string,               // one line per slide: what each photo must show
+  "assets": string,               // existing photos used, or "ASSET NEEDED: ..." listing every photo still to source
+  "altText": string,              // one alt text for the whole carousel, describing slide 1's photo and the key figures
+  "notes": string,                // every figure with its source tag from 07-impact-facts.md, plus [VERIFY: ...] items
+  "flagged": boolean,
+  "formatReason": string,         // why this carousel shape fits the story
+  "slides": Slide[],
+  "images": []
+}
+
+Every Slide has "layout" (one of the allowed layouts above) and
+"theme" (white | blue | navy | green | purple), plus "eyebrow" (≤ 4 words) and
+the fields of its layout:
+
+- cover:        { title, highlight?, subtitle (≤ 25 words), badge? ("Post fixado" only for pinned posts, otherwise a short label or ""), photoId, photoBrief }
+- photo-text:   { title, highlight?, body (≤ 40 words), photoId, photoBrief, stats?: [{value, label}] (≤ 3) }
+- split:        { title, highlight?, body (≤ 40 words), photoId, photoBrief, boxLabel, boxText (≤ 18 words) }
+- numbered:     { title, highlight?, items: [{title, text}] (3–5) }
+- icon-list:    { title, highlight?, items: [{icon, color?, title, text}] (3–5) }
+- side-photo:   { title, highlight?, items: [{icon, label (bold lead-in ending in ":"), text}] (≤ 3), photoId, photoBrief, nextLabel?, nextTitle? }
+- stats:        { title, highlight?, body?, photoId?, photoBrief?, stats: [{value, label, color?}] (2–6, even number preferred) }
+- before-after: { title, highlight?, beforePhotoId, afterPhotoId, beforeBrief, afterBrief, calloutKicker?, calloutValue, calloutText, body? }
+- phases:       { title, phases: [{kicker, name, meta, text}] (≤ 3), footer? }
+- compare:      { title, highlight?, leftLabel, rightLabel, rows: [{before, after}] (3–5), footer? }
+- table:        { title, highlight?, columns: [{name, sub}] (≤ 3), rows: [{label, values: [..]}] (≤ 5), note (source line) }
+- big-stat:     { title, value (≤ 5 chars), valueLabel, stats?: [{value,label}] (≤ 3), boxBadge?, boxText? }
+- timeline:     { title, items: [{year, title, sub?}] (≤ 6), footer?, footerIcon? }
+- cta:          { title, photoId, photoBrief, actions: [{icon, title, text}] (≤ 3) }
+- ba-rows:      { title, counter?, rows: [{kicker, value, label, color?, beforePhotoId?, afterPhotoId?, beforeBrief, afterBrief}] (≤ 4), note? }
+- ba-full:      { beforePhotoId, afterPhotoId, beforeBrief, afterBrief, value, text (≤ 22 words), footerRight }
+- photo-headline: { title, highlight?, subtitle? (≤ 20 words), badge? (≤ 2 words, e.g. "Em obra"), badgeIcon?, photoId, photoBrief }
+- stat-card:    { value (≤ 6 chars), label (≤ 12 words), note? (≤ 25 words), source (where the figure comes from, in plain words), valueColor? }
+- quote:        { quote (VERBATIM from the knowledge base — never invent or paraphrase; in Portuguese it is a faithful translation, say so in notes), name, role, photoId, photoBrief }
+- news:         { tag? (default "Novidade"/"News"), date (month + year), title, highlight?, photoId, photoBrief, body (≤ 35 words) }
+- event:        { title, highlight?, dateTop (month), dateMain (day), dateBottom (year), details: [{icon, text}] (≤ 3), cta (≤ 3 words), photoId, photoBrief }
+- award:        { year, title, highlight?, sub (who / what was awarded), footer? (≤ 16 words) }
+- reel-cover:   { title (≤ 8 words), highlight?, subtitle? (≤ 10 words), badge? (default "Assista"/"Watch"), photoId, photoBrief }
+- story-cta:    { title, highlight?, subtitle?, hint? (default "Toque no link"), photoId, photoBrief }
+- story-poll:   { title (the question), highlight?, subtitle?, hint? (default "Vote na enquete") }
+
+Optional on any slide: "highlightColor" (blue | yellow | rust | green | purple),
+"footerRight" (overrides the footer text), "counter" (overrides "02 / 07").
+Icons: drop, health, education, income, finance, seed, sprout, tree, heart,
+people, share, pin, check, home, book, tap, star, calendar, chart, mail, torch.
+Colors: blue, green, purple, orange, teal, rust, yellow, navy.
+
+General rules:
+- "highlight" must be an exact substring of "title" (the coloured payoff phrase).
+- Stat values ≤ 8 characters; every stat label states cohort, ward and year
+  where relevant. Every number comes from 07-impact-facts.md — the figures in the
+  "Posts fixados" deck are not a source. Unknown figure → "[VERIFY: ...]" in the
+  value or label, and say so in notes.
+- Never a paragraph and a list on the same slide.
+
+PHOTOS — pick from the library below, do not invent one:
+${photoCatalogue(photos)}
+
+- Use a photo id only when it genuinely matches the slide's ward, place and
+  subject (a Tsaayo bathroom photo is not a Dabil water photo). Otherwise leave
+  the id empty and write the matching *Brief as a shot brief.
+- Always fill the *Brief fields, even when an id is set.
+- A before/after pair must show the same subject and the "before" photo must
+  carry stage "before".
+
+Hard rules (from the knowledge base): never invent a statistic, name, place,
+date, quote or currency figure; never claim an asset exists; dignity, never
+rescue; stories carry numbers and numbers carry names; never combine a child's
+full name + school + location.
+`;
+}
+
 function loadPhotoIndex() {
   try {
     const file = path.join(process.cwd(), "photo-index.json");
@@ -153,6 +310,60 @@ function photoCatalogue(photos) {
   return photos.map(p =>
     `- id: ${p.id} | ward: ${p.ward} | place: ${p.place} | year: ${p.year} | stage: ${p.stage} | topics: ${(p.topics || []).join(", ")} | shows: ${p.caption}`
   ).join("\n");
+}
+
+// Resolve photo ids on one object (a slide or a ba-rows row) against the real
+// library; ids the model made up are dropped so nothing renders broken.
+function resolvePhotos(obj, photoById) {
+  ["photoId", "beforePhotoId", "afterPhotoId"].forEach((key) => {
+    const chosen = obj[key];
+    if (!chosen) return;
+    const match = photoById[chosen];
+    if (match) {
+      obj[key.replace("Id", "File")] = match.file;
+      obj[key.replace("Id", "Credit")] = match.caption;
+    } else {
+      delete obj[key];
+    }
+  });
+}
+
+function stampKarimu(p, i, photoById, language, kformat) {
+  const F = KARIMU_FORMATS[kformat] || KARIMU_FORMATS.carousel;
+  // Keep only as many slides as the format allows, and only its layouts:
+  // anything else becomes the format's first layout rather than rendering
+  // at the wrong size.
+  const slides = (Array.isArray(p.slides) ? p.slides : []).slice(0, F.slides[1]).map((s) => {
+    const slide = Object.assign({}, s);
+    if (!F.layouts.includes(slide.layout)) slide.layout = kformat === "carousel" ? "photo-text" : F.layouts[0];
+    delete slide.size;
+    resolvePhotos(slide, photoById);
+    if (Array.isArray(slide.rows)) {
+      slide.rows = slide.rows.map((r) => {
+        if (!r || typeof r !== "object") return r;
+        const row = Object.assign({}, r);
+        resolvePhotos(row, photoById);
+        return row;
+      });
+    }
+    return slide;
+  });
+  return {
+    id: `gen-${Date.now()}-${i}`,
+    images: [],
+    ...p,
+    style: "karimu",
+    format: F.label,
+    kformat,
+    size: F.size,
+    language,
+    versions: {},
+    slides,
+    hashtags: Array.isArray(p.hashtags) ? p.hashtags : [],
+    channels: Array.isArray(p.channels) && p.channels.length ? p.channels : ["Instagram"],
+    generated: true,
+    generatedAt: new Date().toISOString(),
+  };
 }
 
 module.exports = async (req, res) => {
@@ -178,14 +389,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({
-      error: "ANTHROPIC_API_KEY is not configured on this deployment. Add it in the Vercel project's Environment Variables settings.",
-    });
-    return;
-  }
-
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch (e) { body = {}; }
@@ -202,9 +405,25 @@ module.exports = async (req, res) => {
     assetsAvailable = "",
     dateRange = "",
     notes = "",
+    style = "kraft",
+    language = "both",
+    slideCount = "",
+    kformat = "carousel",
   } = body;
 
-  const qty = Math.max(1, Math.min(10, parseInt(quantity, 10) || 3));
+  const isKarimu = style === "karimu";
+  // English is the primary language. "both" drafts English here; the
+  // browser then asks /api/translate-post for the Portuguese version, so
+  // each call stays under 60s. Only an explicit "pt-BR" drafts Portuguese.
+  const draftLanguage = language === "pt-BR" ? "pt-BR" : "en-US";
+  // Carousels are several times longer than a kraft card, and the function
+  // has 60 seconds, so the pinned-post style drafts at most 2 per request.
+  const KF = KARIMU_FORMATS[kformat] ? kformat : "carousel";
+  const F = KARIMU_FORMATS[KF];
+  // Longer formats draft fewer posts per request so the 60-second limit holds.
+  const qty = Math.max(1, Math.min(isKarimu ? F.cap : 10, parseInt(quantity, 10) || 3));
+  const wanted = parseInt(slideCount, 10) || 0;
+  const slidesWanted = wanted ? Math.max(F.slides[0], Math.min(F.slides[1], wanted)) : 0;
 
   const knowledge = loadKnowledge();
   const photos = loadPhotoIndex();
@@ -216,7 +435,8 @@ New content request from the social media team:
 - Number of posts requested: ${qty}
 - Channel(s): ${channels.length ? channels.join(", ") : "agent's choice, pick what fits the topic"}
 - Content pillar: ${pillar || "agent's choice — pick the best-fitting pillar(s) from 05-content-pillars.md"}
-- Post format: ${format || "agent's choice — use the decision table in post-formats.md, and remember the feed is video-first (do not default to a carousel)"}
+- Visual style: ${isKarimu ? `Karimu style, ${F.label.replace(/^Karimu /, "")}, ${slidesWanted || F.slides[2]} slide(s), written in ${draftLanguage === "en-US" ? "US English" : "Brazilian Portuguese"}` : "kraft / scrapbook"}
+- Post format: ${isKarimu ? F.label : format || "agent's choice — use the decision table in post-formats.md, and remember the feed is video-first (do not default to a carousel)"}
 - Funnel stage: ${funnelStage || "mixed — vary across Attract/Trust/Act as fits"}
 - Target publish window: ${dateRange || "not specified"}
 - Topic / story / campaign: ${topic || "not specified — use your judgement based on the knowledge base and what's freshest (e.g. Dabil survey, Arri water, savings groups)"}
@@ -226,67 +446,29 @@ New content request from the social media team:
 
   const systemPrompt = `You are the Karimu Comms Agent, the in-house content specialist for Karimu International Help Foundation. Ground every draft strictly in the following knowledge base. Do not use any fact, name, or figure that isn't in it.
 ${knowledge}
-${schemaInstructions(photos)}`;
-
-  // Org-level (unscoped) API keys must name a workspace explicitly. Set
-  // ANTHROPIC_WORKSPACE_ID in the Vercel environment variables if your key
-  // isn't already scoped to a workspace; leave it unset if it is.
-  const workspaceId = process.env.ANTHROPIC_WORKSPACE_ID;
-
-  const anthropicHeaders = {
-    "Content-Type": "application/json",
-    "x-api-key": apiKey,
-    "anthropic-version": "2023-06-01",
-  };
-  if (workspaceId) {
-    anthropicHeaders["anthropic-workspace-id"] = workspaceId;
-  }
+${isKarimu ? karimuSchemaInstructions(photos, draftLanguage, slidesWanted, KF) : schemaInstructions(photos)}`;
 
   try {
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: anthropicHeaders,
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        // Sonnet 5 runs adaptive thinking by default, and thinking tokens come
-        // out of max_tokens — 4000 (the Sonnet 4.6 value) truncates the JSON
-        // mid-post once reasoning is in the budget.
-        max_tokens: 16000,
-        // Drafting from a fixed knowledge base does not need deep reasoning,
-        // and Vercel's Hobby plan caps a function at 60s. Measured on a
-        // 2-3 post request: "high" (the default) 2m33s, "medium" 51s,
-        // "low" 30s with no loss in draft quality or guardrail compliance.
-        output_config: { effort: "low" },
-        system: systemPrompt,
-        messages: [{ role: "user", content: requestBrief }],
-      }),
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      res.status(502).json({ error: `Anthropic API error: ${response.status} ${errText}` });
+    let text;
+    try {
+      text = await callClaude({ system: systemPrompt, user: requestBrief });
+    } catch (e) {
+      res.status(e.status || 500).json({ error: e.message });
       return;
     }
 
-    const data = await response.json();
-    const textBlocks = (data.content || [])
-      .filter((b) => b.type === "text")
-      .map((b) => b.text)
-      .join("\n");
-
-    const cleaned = textBlocks.replace(/^```json\s*/i, "").replace(/```\s*$/i, "").trim();
-
     let posts;
     try {
-      posts = JSON.parse(cleaned);
+      posts = parseJSON(text);
     } catch (e) {
-      res.status(502).json({ error: "Could not parse the generated posts as JSON.", raw: cleaned });
+      res.status(502).json({ error: "Could not parse the generated posts as JSON.", raw: text });
       return;
     }
 
     if (!Array.isArray(posts)) posts = [posts];
 
     const stamped = posts.map((p, i) => {
+      if (isKarimu) return stampKarimu(p, i, photoById, draftLanguage, KF);
       const art = p.artwork || {};
       // Resolve photo ids against the real library. Anything the model made up
       // is dropped rather than rendered as a broken image.
