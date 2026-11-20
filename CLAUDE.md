@@ -34,6 +34,10 @@ Static site + one serverless function. No build step; Vercel zero-config.
   AI drafts, removed posts) lives in `localStorage` only, per browser. There
   is no shared backend.
 - `posts-data.js` — the seed post queue.
+- `posts-karimu.js` — Karimu-style artwork for the seed queue: per post id,
+  its format, English slides and a Portuguese version. Loaded right after
+  `posts-data.js`. Figures come from the posts themselves; change a number in
+  `posts-data.js` (and `07-impact-facts.md`) first, then here.
 - `api/generate-posts.js` — calls the Anthropic API to draft new posts. Reads
   every file in `knowledge/` at request time and the photo library index.
   Needs `ANTHROPIC_API_KEY`; add `ANTHROPIC_WORKSPACE_ID` too if the key is
@@ -84,9 +88,10 @@ Static site + one serverless function. No build step; Vercel zero-config.
 
 ## Known gaps
 
-- The photo library is a seeded subset (11 photos: sanitation, water-before,
-  education, health). Savings groups, entrepreneurship and Dabil are not
-  covered yet, so posts on those correctly fall back to `ASSET NEEDED`.
+- The photo library is a seeded subset (18 photos: sanitation, water before
+  and the 2026 Arri expansion, education, health, the 2026 Dabil survey, a 2025
+  volunteer trip). Savings groups and entrepreneurship are not covered yet, so
+  posts on those correctly fall back to `ASSET NEEDED`.
 - The library is a snapshot. New photos on the Drive do not appear
   automatically. A durable fix is a Google service account + an `/api/photo`
   proxy endpoint so the app can query Drive at runtime.

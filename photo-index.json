@@ -1,7 +1,7 @@
 {
  "note": "Curated photo library pulled from the Karimu shared Drive. Tags were assigned after visual review. Photos are resized copies committed to this repo so the artwork renderer and the PNG export can use them without CORS or Drive sign-in. Re-run the library script to extend it.",
  "drive": "https://drive.google.com/drive/u/0/folders/0AFQB35McY4XQUk9PVA",
- "generated": "2026-09-12",
+ "generated": "2026-11-20",
  "photos": [
   {
    "id": "1-jQ1vqu1n",
@@ -174,6 +174,123 @@
     "school"
    ],
    "caption": "Handwashing station and hygiene pictograms at the new Tsaayo Primary bathrooms, September 2026."
+  },
+  {
+   "id": "1scnv4j21l",
+   "file": "images/library/1scnv4j21l.jpg",
+   "title": "Copy of 2025-08-18 Ayalagaya (TZ) 197 [PXL] Dareda Kati - Secondary school, children.jpg",
+   "driveId": "1scnv4j21ls8WLUbqsUHdOWGA079ellZr",
+   "ward": "Ayalagaya",
+   "place": "Dareda Kati Secondary School",
+   "year": 2025,
+   "stage": "in use",
+   "topics": [
+    "education",
+    "school",
+    "students",
+    "science"
+   ],
+   "caption": "Three secondary students running a titration in the science lab at Dareda Kati Secondary School, Ayalagaya, August 2025."
+  },
+  {
+   "id": "1KDDwQhyrI",
+   "file": "images/library/1KDDwQhyrI.jpg",
+   "title": "2026-09-22-Ayalagaya high school classroom students .png",
+   "driveId": "1KDDwQhyrIdEGLMwIGKeE-0IQwvEfbKVk",
+   "ward": "Ayalagaya",
+   "place": "Ayalagaya High School",
+   "year": 2026,
+   "stage": "in use",
+   "topics": [
+    "education",
+    "school",
+    "students",
+    "classroom"
+   ],
+   "caption": "A smiling student in front of her class at Ayalagaya High School, September 2026."
+  },
+  {
+   "id": "16WxAdIDk-",
+   "file": "images/library/16WxAdIDk-.jpg",
+   "title": "2026-09-25-Arri Ward-Dental outreach-Students at Dudiye primary been given the flyers for the dental education",
+   "driveId": "16WxAdIDk-2uoP5L-iaS1bbQPdZnHxoOD",
+   "ward": "Arri",
+   "place": "Dudiye Primary School",
+   "year": 2026,
+   "stage": "in use",
+   "topics": [
+    "health",
+    "hygiene",
+    "school",
+    "students"
+   ],
+   "caption": "Dudiye Primary students in Arri holding up Karimu dental-health flyers during the September 2026 dental outreach."
+  },
+  {
+   "id": "105VTsbvzO",
+   "file": "images/library/105VTsbvzO.jpg",
+   "title": "2026.Dabil.DoortoDoor Survey--better resolution .jpeg",
+   "driveId": "105VTsbvzOv9dmQuexgsXtmSOkG1Nq8La",
+   "ward": "Dabil",
+   "place": "Dabil Ward",
+   "year": 2026,
+   "stage": "before",
+   "topics": [
+    "survey",
+    "dabil",
+    "daily life",
+    "community"
+   ],
+   "caption": "A Karimu surveyor with a tablet interviewing a grandmother at home in Dabil, children listening, during the 2026 door-to-door baseline survey."
+  },
+  {
+   "id": "1C6TfrnIgb",
+   "file": "images/library/1C6TfrnIgb.jpg",
+   "title": "2026-08-06_Arri Ward-Expansion of Arri Water Project-Community Entering Pipe into the Trench-01.jpg",
+   "driveId": "1C6TfrnIgbeXEJk1jGQ-hqMj-yHu5uQ9H",
+   "ward": "Arri",
+   "place": "Arri Water Project expansion",
+   "year": 2026,
+   "stage": "construction",
+   "topics": [
+    "water",
+    "construction",
+    "community labour"
+   ],
+   "caption": "Arri community members lowering a water pipe into a hand-dug trench for the water project expansion, August 2026."
+  },
+  {
+   "id": "12eppST2zc",
+   "file": "images/library/12eppST2zc.jpg",
+   "title": "2026-06-29-Arri-Expansion of Arri Water Project-Carrying of pipes to the trenches (42).jpg",
+   "driveId": "12eppST2zcsDTJW18Cyd8grm3-xABR-vi",
+   "ward": "Arri",
+   "place": "Arri Water Project expansion",
+   "year": 2026,
+   "stage": "construction",
+   "topics": [
+    "water",
+    "construction",
+    "community labour"
+   ],
+   "caption": "Arri community members carrying water pipes up a forested hillside to the trenches, June 2026."
+  },
+  {
+   "id": "1j40w_80Lg",
+   "file": "images/library/1j40w_80Lg.jpg",
+   "title": "2025-07-16 family trip making bricks.jpg",
+   "driveId": "1j40w_80LgaA2lMaJouKe2tt7n3opL73g",
+   "ward": "Not recorded",
+   "place": "July 2025 Volunteer Family Trip (location not recorded)",
+   "year": 2025,
+   "stage": "in use",
+   "topics": [
+    "volunteers",
+    "family trip",
+    "community",
+    "school"
+   ],
+   "caption": "A volunteer and a Tanzanian student making mud bricks side by side during the July 2025 Family Trip."
   }
  ]
 }

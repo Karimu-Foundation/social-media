@@ -630,7 +630,7 @@
   L.event = function (a, t, ctx) {
     const S = ctx.size;
     const story = S.key === "story";
-    const photoH = story ? 760 : S.key === "square" ? 380 : 500;
+    const photoH = story ? 760 : S.key === "square" ? 380 : 640;
     const rows = (a.details || []).slice(0, 3).map(d =>
       "<div style='display:flex;gap:20px;align-items:center;margin-top:20px'>" +
       "<div style='flex:none;width:58px;height:58px;border-radius:50%;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center'>" + icon(d.icon || "calendar", C.yellow, 28, 2) + "</div>" +
