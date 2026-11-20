@@ -89,6 +89,15 @@ Static site + one serverless function. No build step; Vercel zero-config.
 - `knowledge/` — copies of the agent's guardrails, voice, pillars, channel
   playbooks, format catalogue and approved facts.
 
+## Weekly routine
+
+A scheduled session runs every Monday ~7:00 (São Paulo) and follows
+`routines/weekly-posts.md`: reads the newest report, updates
+`07-impact-facts.md` if it is newer, writes 5 posts (rotating pillars via
+`routines/rotation.json`, never Fundraising), picks Drive photos, merges to
+production as Pending and emails Edu for approval. Change the procedure in that
+file, not in the scheduled task.
+
 ## Known gaps
 
 - The photo library is a seeded subset (18 photos: sanitation, water before
