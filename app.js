@@ -429,11 +429,12 @@ function renderAll() {
 }
 
 // ---- convert older (kraft) drafts to the Karimu style ----
-// Kraft format → Karimu format. Video-only and WhatsApp posts have no artwork
-// to convert.
+// Kraft format → Karimu format. Long-form videos have no artwork to convert;
+// WhatsApp messages get one square image to send with the text.
 function karimuFormatFor(post) {
   const f = String(post.format || "").toLowerCase();
-  if (/whatsapp|long-form/.test(f)) return null;
+  if (/long-form/.test(f)) return null;
+  if (/whatsapp/.test(f)) return "square"; // one image sent with the message
   if (/carousel/.test(f)) return "carousel";
   if (/single-stat/.test(f)) return "square";
   if (/reel|short/.test(f)) return "reel-cover";

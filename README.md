@@ -123,8 +123,8 @@ header to do them all): the caption and figures stay, the artwork is rebuilt
 in the matching Karimu format (quote / data / announcement cards become single
 images, single-stat cards become squares, carousels stay carousels, Reels get a
 Reel cover, LinkedIn posts get the 1200×628 image) and a Português version is
-written. **↩ Undo conversion** brings the kraft card back. WhatsApp messages and
-long-form videos have no artwork and are left as they are.
+written. **↩ Undo conversion** brings the kraft card back. WhatsApp messages get a
+square image to send with the text; long-form videos are left as they are.
 
 ## Removing posts
 

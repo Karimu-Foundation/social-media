@@ -5,8 +5,9 @@
 // from the post itself in posts-data.js — nothing here adds a fact. Change a
 // number there (and in knowledge/07-impact-facts.md) first, then here.
 //
-// Not covered on purpose: p06 (long-form YouTube, thumbnail = face, no text)
-// and the WhatsApp text broadcasts p15 and p19.
+// Not covered on purpose: p06 (long-form YouTube — its thumbnail is a face
+// with no text, per 09-visual-system.md). The WhatsApp broadcasts p15 and p19
+// get a square image to send with the message.
 
 (function () {
   "use strict";
@@ -319,6 +320,20 @@ Assine para não perder. Link na bio.`,
       },
     },
 
+    // ---------------------------------------------------------------- p15
+    p15: {
+      kformat: "square", size: "square",
+      slides: [{ layout: "news", tag: "Newsletter", date: "This week", title: "Dabil's first survey results, and more.", highlight: "and more.", photoFile: "images/p03-after-full.jpg", body: "**300+ births a month** at our maternity ward, and an honest look at 2026 fundraising." }],
+      pt: {
+        title: "Chamada da newsletter (WhatsApp)",
+        copy: `📬 Newsletter nova esta semana: os primeiros resultados da pesquisa de Dabil, mais de 300 partos por mês na nossa maternidade e um olhar honesto sobre a captação de 2026. Responda se quiser receber os destaques antes.`,
+        cta: "Responda / fique de olho",
+        hashtags: [],
+        altText: "Anúncio da newsletter: resultados da pesquisa de Dabil, mais de 300 partos por mês na maternidade e a captação de 2026.",
+        slides: [{ layout: "news", tag: "Newsletter", date: "Esta semana", title: "Os primeiros resultados de Dabil, e mais.", highlight: "e mais.", photoFile: "images/p03-after-full.jpg", body: "**Mais de 300 partos por mês** na nossa maternidade e um olhar honesto sobre a captação de 2026." }],
+      },
+    },
+
     // ---------------------------------------------------------------- p16
     p16: {
       kformat: "single", size: "feed",
@@ -386,6 +401,22 @@ Veja mais fotos e a história completa no nosso site.`,
           { layout: "split", theme: "white", eyebrow: "O próximo passo", title: "Elas escolheram fazer mochilas.", highlight: "fazer mochilas.", body: "Um doador agora financia formação profissional. O primeiro projeto ensina costura, com voluntários da comunidade.", photoBrief: "Alunos costurando mochilas escolares no projeto de formação", boxLabel: "O objetivo", boxText: "Um caminho para um emprego ou para a autonomia." },
           { layout: "cta", theme: "navy", eyebrow: "A história completa", title: "Veja mais no nosso site.", highlight: "no nosso site.", photoFile: "images/p18b-full.jpg", footerRight: "karimufoundation.org", actions: [{ icon: "book", title: "Leia a história", text: "Mais fotos e a história completa no nosso site." }, { icon: "share", title: "Compartilhe", text: "Mande para alguém que se importa com inclusão." }] },
         ],
+      },
+    },
+
+    // ---------------------------------------------------------------- p19
+    // No photo: the sourced still shows the Dareda Kati (Ayalagaya) water
+    // committee, and this post is about Arri.
+    p19: {
+      kformat: "square", size: "square",
+      slides: [{ layout: "stat-card", theme: "navy", eyebrow: "Arri water", value: "<30", label: "days to fix a water problem in Arri: our goal, now met.", note: "Communities now find up to **89%** of their own problems before we do.", source: "Karimu, water maintenance update" }],
+      pt: {
+        title: "Marco na manutenção da água de Arri (WhatsApp)",
+        copy: `💧 Atualização rápida: o sistema de água de Arri agora é consertado em menos de 30 dias, a nossa meta, e as comunidades estão encontrando até 89% dos próprios problemas antes de nós. O sistema está começando a funcionar sozinho.`,
+        cta: "n/a (mensagem informativa)",
+        hashtags: [],
+        altText: "Menos de 30 dias para consertar um problema de água em Arri; as comunidades encontram até 89% dos próprios problemas.",
+        slides: [{ layout: "stat-card", theme: "navy", eyebrow: "Água em Arri", value: "<30", label: "dias para consertar um problema de água em Arri: a meta, alcançada.", note: "As comunidades já encontram até **89%** dos próprios problemas antes de nós.", source: "Karimu, atualização da manutenção de água" }],
       },
     },
 
