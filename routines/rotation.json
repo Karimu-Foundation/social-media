@@ -7,8 +7,27 @@
     "Institutional & Special Dates",
     "Newsletter & Channel Push"
   ],
-  "next": 0,
+  "next": 5,
   "history": [
-    { "date": "2026-11-20", "batch": "posts-batch-2026-11.js", "pillars": ["all seven, two each (manual batch)"], "note": "Newsletter & Channel Push posted this week (n11, n12)." }
+    {
+      "date": "2026-11-20",
+      "batch": "posts-batch-2026-11.js",
+      "pillars": [
+        "all seven, two each (manual batch)"
+      ],
+      "note": "Newsletter & Channel Push posted this week (n11, n12)."
+    },
+    {
+      "date": "2026-11-23",
+      "batch": "posts-batch-2026-11-23.js",
+      "pillars": [
+        "Karimu Impact Stories",
+        "Karimu Talks",
+        "Karimu Transformed Volunteers",
+        "Shorts & Reels",
+        "Institutional & Special Dates"
+      ],
+      "note": "Institutional post is GivingTuesday (Dec 1, 2026). Newsletter not due (n11/n12 on 2026-11-20)."
+    }
   ]
 }

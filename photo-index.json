@@ -1,7 +1,7 @@
 {
  "note": "Curated photo library pulled from the Karimu shared Drive. Tags were assigned after visual review. Photos are resized copies committed to this repo so the artwork renderer and the PNG export can use them without CORS or Drive sign-in. Re-run the library script to extend it.",
  "drive": "https://drive.google.com/drive/u/0/folders/0AFQB35McY4XQUk9PVA",
- "generated": "2026-11-20",
+ "generated": "2026-11-23",
  "photos": [
   {
    "id": "1-jQ1vqu1n",
@@ -377,6 +377,89 @@
     "dabil"
    ],
    "caption": "Family Trip volunteers with a Dabil family outside their home, July 16, 2026."
+  },
+  {
+   "id": "1j6F_BUU7w",
+   "file": "images/library/1j6F_BUU7w.jpg",
+   "title": "2026-09-03-Arri-Tsaayo Primary Bathrooms-Girls Washrooms' sink Water tap.jpg",
+   "driveId": "1j6F_BUU7wW40NIagz_YktnjsnXgnX9OG",
+   "ward": "Arri",
+   "place": "Tsaayo Primary School",
+   "year": 2026,
+   "stage": "after",
+   "topics": [
+    "sanitation",
+    "bathrooms",
+    "school",
+    "water"
+   ],
+   "caption": "Running water at a tiled sink in the new girls' washrooms at Tsaayo Primary School, September 2026."
+  },
+  {
+   "id": "1d8Nfl-u1Y",
+   "file": "images/library/1d8Nfl-u1Y.jpg",
+   "title": "2026-03-27-KARIMU STAFF-NICE LUBABA",
+   "driveId": "1d8Nfl-u1Ydm6xYfLDXX_VUrqETRb8sZw",
+   "ward": "Not recorded",
+   "place": "Karimu Tanzania staff portrait",
+   "year": 2026,
+   "stage": "portrait",
+   "topics": [
+    "staff",
+    "income",
+    "entrepreneurship"
+   ],
+   "caption": "Staff portrait of Nice Lubaba, Karimu's Income Projects team, March 2026."
+  },
+  {
+   "id": "1vZOPEsKtd",
+   "file": "images/library/1vZOPEsKtd.jpg",
+   "title": "2026-10-17-Arri-Business traing-SharmoGraduation.jpg.jpg",
+   "driveId": "1vZOPEsKtdkFTsvlgvk-qBkChMH08rMUC",
+   "ward": "Arri",
+   "place": "Sharmo",
+   "year": 2026,
+   "stage": "in use",
+   "topics": [
+    "entrepreneurship",
+    "income",
+    "graduation",
+    "women"
+   ],
+   "caption": "Graduates in caps reading at the entrepreneurship graduation in Sharmo, Arri, October 17, 2026."
+  },
+  {
+   "id": "1EvnADPJW3",
+   "file": "images/library/1EvnADPJW3.jpg",
+   "title": "2026-10-23-Ayalagaya ward-Neonatal Infection-Training at dareda kati HC to the medical staff .HEIC",
+   "driveId": "1EvnADPJW3fBIoRqOmsUuXqLl5MLfOq1w",
+   "ward": "Ayalagaya",
+   "place": "Dareda Kati Health Center",
+   "year": 2026,
+   "stage": "in use",
+   "topics": [
+    "health",
+    "training",
+    "maternal and newborn care"
+   ],
+   "caption": "A clinician leads a neonatal-infection training for medical staff from local dispensaries at Dareda Kati Health Center, October 23, 2026."
+  },
+  {
+   "id": "1ImVs0ywVp",
+   "file": "images/library/1ImVs0ywVp.jpg",
+   "title": "2026-09-25-Ayalagaya Ward-Mural painting-13.heic",
+   "driveId": "1ImVs0ywVps-BuJmXK3MnH0moEbzZfFLY",
+   "ward": "Ayalagaya",
+   "place": "School mural (school not recorded)",
+   "year": 2026,
+   "stage": "in use",
+   "topics": [
+    "volunteers",
+    "volunteer trip",
+    "school",
+    "art"
+   ],
+   "caption": "Volunteers painting a school mural designed from students' drawings, Ayalagaya, September 25, 2026 volunteer trip."
   }
  ]
 }

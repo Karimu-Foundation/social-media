@@ -174,9 +174,10 @@
     opts = opts || {};
     const w = opts.w ? "width:" + opts.w + "px;" : "";
     const r = opts.radius === undefined ? "" : "border-radius:" + opts.radius + "px;";
+    const pos = opts.pos ? "background-position:" + String(opts.pos).replace(/[^a-z0-9%. -]/gi, "") + ";" : "";
     const chip = opts.chip ? "<span class='kk-chip' style='background:" + opts.chipColor + "'>" + esc(opts.chip) + "</span>" : "";
     if (file) {
-      return "<div class='kk-photo' style='" + w + "height:" + h + "px;" + r + "background-image:url(\"" + String(file).replace(/"/g, "%22") + "\")'>" + chip + "</div>";
+      return "<div class='kk-photo' style='" + w + "height:" + h + "px;" + r + pos + "background-image:url(\"" + String(file).replace(/"/g, "%22") + "\")'>" + chip + "</div>";
     }
     const border = t.dark ? "rgba(255,255,255,.5)" : "#B9C6D6";
     const bg = t.dark ? "rgba(255,255,255,.08)" : "#F4F7FB";
@@ -342,7 +343,7 @@
     }
     return "<div class='kk-pad'>" + head(a, t, ctx) + sp(56) + title(a, t) +
       (a.body ? "<p class='kk-body' style='color:" + t.text + ";margin-top:22px'>" + rich(a.body, t.title) + "</p>" : "") +
-      sp(40) + (hasPhoto ? photo(a.photoFile, a.photoBrief, stats.length > 4 ? 300 : 370, t) + sp(40) : sp(10)) +
+      sp(40) + (hasPhoto ? photo(a.photoFile, a.photoBrief, stats.length > 4 ? 300 : 370, t, { pos: a.photoPosition }) + sp(40) : sp(10)) +
       rowsHtml.join("") + "</div>" + foot(a, t, ctx);
   };
 
@@ -539,7 +540,7 @@
     const story = S.key === "story";
     const pad = 80;
     const bottom = story ? 300 : 52;
-    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t) +
+    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t, a.photoPosition) +
       "<div style='position:absolute;inset:0;background:linear-gradient(to top, rgba(20,45,68,.94) 0%, rgba(20,45,68,.78) " + (story ? 34 : 38) + "%, rgba(20,45,68,0) " + (story ? 62 : 70) + "%)'></div>" +
       (a.badge ? "<div style='position:absolute;top:" + (story ? 250 : 56) + "px;left:64px;background:#fff;border-radius:999px;padding:13px 24px 13px 20px;display:flex;align-items:center;gap:12px'>" +
         icon(a.badgeIcon || "pin", C.rust, 26, 2.2) + "<span style='font-weight:800;font-size:21px;letter-spacing:.08em;color:" + C.navy + ";text-transform:uppercase'>" + esc(a.badge) + "</span></div>" : "") +
@@ -675,7 +676,7 @@
   // grid (which crops a Reel cover to 1080x1350) still shows all of it.
   L["reel-cover"] = function (a, t, ctx) {
     const S = ctx.size;
-    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t) +
+    return bgPhoto(a.photoFile, a.photoBrief, "inset:0", t, a.photoPosition) +
       "<div style='position:absolute;inset:0;background:linear-gradient(to top, rgba(20,45,68,.92) 0%, rgba(20,45,68,.7) 40%, rgba(20,45,68,.1) 66%, rgba(20,45,68,.35) 100%)'></div>" +
       "<div style='position:absolute;left:80px;right:80px;top:330px'>" + logoTag(true, 56) + "</div>" +
       "<div style='position:absolute;left:80px;right:80px;bottom:" + (S.h - 1635 + 40) + "px'>" +
