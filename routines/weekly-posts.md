@@ -76,7 +76,20 @@ For each post:
 
 ## 4. Photos from the Drive
 
-Photos come from two places — search **both**:
+Photos come from these places — search them **in this order**:
+- **First choice:** the folder **"_Edu Birthday Trip Sept 2026 – Organized"**
+  `1JFOy9FuKPJfwruLasK7Zs0lAnvCh0MCZ` (inside COMMS), search with
+  `'1JFOy9FuKPJfwruLasK7Zs0lAnvCh0MCZ' in ancestors`. It is sorted into
+  subfolders by ward and project (Arri Ward, Dabil Primary, Dareda Kati Health
+  Center, Biochar 2026, Karimu Threads of Hope, Leadership Program 2026, Dental
+  Health Outreach, Ayalagaya Secondary, Chicken Project, …) and files carry
+  descriptive names like `2026-09-24-Ayalagaya Ward-Threads of Hope-Sewing
+  workshop-08.jpg`, so ward, place and date can be read from the name.
+  Skip the subfolder `_To review - no topic` (not yet sorted). Folders and
+  files named "Poverty" or "Poorest of the poor" need extra care: use them only
+  where the post is about the starting point of the work, show people with
+  dignity (never misery as spectacle), and never repeat those words in captions
+  or alt text.
 - the shared drive **"Karimu: Pictures"** (root id `0AFQB35McY4XQUk9PVA`;
   newest material often in the folder `1FKHWhDMkkdfENj3lUVS0JIxny7V2Bjud`);
   files are usually named `YYYY-MM-DD-Ward-Place-Subject`;
