@@ -11,7 +11,8 @@
 //   "hook": { "pill": "Karimu", "title": "A week with the community.", "highlight": "community." },
 //   "clips": [
 //     { "file": "/abs/a.mov", "start": 0, "end": 6.9, "caption": "Volunteers arrive at ..." },
-//     { "file": "/abs/b.mov", "start": 0, "end": 4.4, "caption": "Ayalagaya, September 2026" }
+//     { "file": "/abs/b.mov", "start": 0, "end": 4.4, "caption": "Ayalagaya, September 2026" },
+//     { "file": "/abs/c.jpg", "duration": 3.5, "focus": [0.4, 0.5], "zoom": "in", "caption": "..." }  // photo
 //   ],
 //   "end": { "title": "Built by the community.", "highlight": "Follow along.", "sub": "..." },
 //   "logo": "/abs/path/images/logo-h-white.png",  // optional; defaults to the repo logo
@@ -52,7 +53,7 @@ const hl = (text, h) => {
   return esc(t.slice(0, i)) + "<span>" + esc(h) + "</span>" + esc(t.slice(i + h.length));
 };
 
-function ff(args) { execFileSync("ffmpeg", ["-v", "error", "-y", ...args], { stdio: "inherit" }); }
+function ff(args) { execFileSync("ffmpeg", ["-nostdin", "-v", "error", "-y", ...args], { stdio: "inherit" }); }
 function probeDuration(f) {
   return parseFloat(execFileSync("ffprobe", ["-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", f]).toString());
 }
@@ -67,14 +68,16 @@ async function overlays() {
   const endTitle = end.title ? end.title + " " + endHl : endHl;
   const wm = spec.watermark === false ? "" : `<img class="wm" src="file://${logo}">`;
   const frames = [];
-  frames.push(`<div class="f" id="hook">${wm}<div class="hook"><span class="pill">▶ ${esc((spec.hook || {}).pill || "Karimu")}</span><div class="h">${hl((spec.hook || {}).title, (spec.hook || {}).highlight)}</div></div>${spec.clips[0].caption ? `<div class="cap"><b>${esc(spec.clips[0].caption)}</b></div>` : ""}</div>`);
-  spec.clips.forEach((c, i) => frames.push(`<div class="f" id="cap${i}">${wm}${c.caption ? `<div class="cap"><b>${esc(c.caption)}</b></div>` : ""}</div>`));
+  frames.push(`<div class="f shade-hook" id="hook">${wm}<div class="hook"><span class="pill">▶ ${esc((spec.hook || {}).pill || "Karimu")}</span><div class="h">${hl((spec.hook || {}).title, (spec.hook || {}).highlight)}</div></div>${spec.clips[0].caption ? `<div class="cap"><b>${esc(spec.clips[0].caption)}</b></div>` : ""}</div>`);
+  spec.clips.forEach((c, i) => frames.push(`<div class="f shade" id="cap${i}">${wm}${c.caption ? `<div class="cap"><b>${esc(c.caption)}</b></div>` : ""}</div>`));
   frames.push(`<div class="f end" id="end"><div class="bar"><i style="background:#4A8BD0"></i><i style="background:#6DB33F"></i><i style="background:#8B6FC1"></i><i style="background:#E07A47"></i><i style="background:#52AE5E"></i></div><div class="in"><div class="k"><i></i>Karimu</div><div class="t">${hl(endTitle, endHl)}</div>${end.sub ? `<div class="s">${esc(end.sub)}</div>` : ""}</div><img src="file://${logo}"></div>`);
   const html = `<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700;800;900&display=swap">
 <style>
 html,body{margin:0;background:transparent}
 .f{width:1080px;height:1920px;position:relative;font-family:Figtree,sans-serif;overflow:hidden}
+.shade::before,.shade-hook::before{content:"";position:absolute;left:0;right:0;top:0;height:520px;background:linear-gradient(rgba(10,25,40,.45),rgba(10,25,40,0))}
+.shade-hook::before{height:980px;background:linear-gradient(rgba(10,25,40,.62) 0%,rgba(10,25,40,.45) 55%,rgba(10,25,40,0) 100%)}
 .wm{position:absolute;left:70px;top:260px;height:64px;opacity:.95;filter:drop-shadow(0 2px 10px rgba(0,0,0,.55))}
 .hook{position:absolute;left:70px;right:70px;top:380px}
 .pill{display:inline-block;background:#F2C14E;color:#2B5B7E;font-weight:800;font-size:30px;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;border-radius:999px}
@@ -104,22 +107,37 @@ html,body{margin:0;background:transparent}
   await b.close();
 }
 
+const isImage = (f) => /\.(jpe?g|png|webp)$/i.test(f);
+
+// Photo clips: a slow zoom ("Ken Burns") over the photo, cropped to fill the
+// 9:16 frame. `focus: [x, y]` (0–1) picks which part of a wide photo stays in
+// frame (default centre); `zoom: "in" | "out"` (default "in").
+function photoFill(c, dur) {
+  const n = Math.round(dur * 30);
+  const [fx, fy] = c.focus || [0.5, 0.5];
+  const z = c.zoom === "out" ? `1.12-0.12*on/${n}` : `1+0.12*on/${n}`;
+  return `[0:v]scale=2160:3840:force_original_aspect_ratio=increase,crop=2160:3840:(iw-2160)*${fx}:(ih-3840)*${fy},` +
+    `zoompan=z='${z}':x='(iw-iw/zoom)*${fx}':y='(ih-ih/zoom)*${fy}':d=${n}:s=1080x1920:fps=30,format=yuv420p[base]`;
+}
+
 function clipPart(c, i) {
   const out = path.join(work, `c${i}.mp4`);
-  const dur = Math.max(0.5, (c.end || probeDuration(c.file)) - (c.start || 0));
-  const fill = "[0:v]split[a][b];[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:5[bg];[a]scale=1080:1920:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,fps=30,format=yuv420p[base]";
+  const photo = isImage(c.file);
+  const dur = photo ? (c.duration || 3.5) : Math.max(0.5, (c.end || probeDuration(c.file)) - (c.start || 0));
+  const fill = photo ? photoFill(c, dur)
+    : "[0:v]split[a][b];[b]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,boxblur=30:5[bg];[a]scale=1080:1920:force_original_aspect_ratio=decrease[fg];[bg][fg]overlay=(W-w)/2:(H-h)/2,fps=30,format=yuv420p[base]";
   const ov = i === 0
     ? `;[base][1:v]overlay=0:0:enable='lte(t,3.5)'[v1];[v1][2:v]overlay=0:0:enable='gt(t,3.5)'[v]`
     : `;[base][1:v]overlay=0:0[v]`;
-  const inputs = ["-ss", String(c.start || 0), "-t", String(dur), "-i", c.file];
+  const inputs = photo ? ["-i", c.file] : ["-ss", String(c.start || 0), "-t", String(dur), "-i", c.file];
   if (i === 0) inputs.push("-i", path.join(work, "hook.png"), "-i", path.join(work, "cap0.png"));
   else inputs.push("-i", path.join(work, `cap${i}.png`));
-  const audio = spec.keepAudio !== false && hasAudio(c.file);
+  const audio = !photo && spec.keepAudio !== false && hasAudio(c.file);
   const n = i === 0 ? 3 : 2;
   const args = [...inputs];
   if (!audio) args.push("-f", "lavfi", "-t", String(dur), "-i", "anullsrc=r=48000:cl=stereo");
   args.push("-filter_complex", fill + ov, "-map", "[v]", "-map", audio ? "0:a:0" : `${n}:a`,
-    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-ar", "48000", "-ac", "2", "-shortest", out);
+    "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", "-ar", "48000", "-ac", "2", "-t", String(dur), out);
   ff(args);
   return out;
 }
