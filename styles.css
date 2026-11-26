@@ -512,3 +512,8 @@ button.x { padding: 3px 7px; }
 @media (max-width: 700px) {
   header.top { flex-wrap: wrap; }
 }
+
+/* Shared / local badge next to the title */
+.sync-mode { display: inline-block; margin-left: 6px; padding: 1px 6px; border-radius: 999px; font-size: 9.5px; letter-spacing: .04em; border: 1px solid #55534b; color: #C9C6BA; }
+.sync-mode.shared { border-color: var(--lime); color: var(--lime); }
+.sync-mode.local { border-color: #d6a741; color: #d6a741; }

@@ -11,8 +11,8 @@
 //   PUT  /api/calendar { baseRev, doc } → { rev } — or 409 { doc } when someone
 //        else saved first; the browser re-applies its change on top and retries.
 
-const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+const { configured, redis, notConfigured, readBody } = require("../lib/store");
+
 const KEY = "karimu:calendar:v1";
 const MAX_BYTES = 900 * 1024;
 
@@ -26,17 +26,6 @@ redis.call('SET', KEYS[1], ARGV[1])
 return 'OK'`;
 
 const empty = () => ({ rev: 0, updatedAt: null, weeks: {}, slots: [] });
-
-async function redis(cmd) {
-  const r = await fetch(URL_, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(cmd),
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok || j.error) throw new Error(j.error || `Store answered ${r.status}`);
-  return j.result;
-}
 
 const str = (v, n) => (typeof v === "string" ? v.slice(0, n) : "");
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -66,10 +55,7 @@ function clean(doc) {
 
 module.exports = async (req, res) => {
   res.setHeader("Cache-Control", "no-store");
-  if (!URL_ || !TOKEN) {
-    res.status(503).json({ configured: false, error: "No shared store connected. Connect Upstash for Redis to this project in Vercel → Storage." });
-    return;
-  }
+  if (!configured()) { notConfigured(res); return; }
   try {
     if (req.method === "GET") {
       const raw = await redis(["GET", KEY]);
@@ -80,10 +66,7 @@ module.exports = async (req, res) => {
       res.status(405).json({ error: "Use GET or PUT." });
       return;
     }
-    let body = req.body;
-    if (typeof body === "string") {
-      try { body = JSON.parse(body); } catch (e) { body = {}; }
-    }
+    const body = readBody(req);
     const baseRev = Number(body && body.baseRev);
     if (!Number.isInteger(baseRev) || baseRev < 0 || !body.doc) {
       res.status(400).json({ error: "Send { baseRev, doc }." });

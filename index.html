@@ -12,7 +12,7 @@
       <div class="mark">K</div>
       <div>
         Karimu Content Studio
-        <small>Post review &amp; approval</small>
+        <small>Post review &amp; approval <span id="sync-mode" class="sync-mode">…</span></small>
       </div>
     </div>
     <nav class="view-tabs">
@@ -52,8 +52,9 @@
       This queue was pre-generated from the Karimu Social Media project's knowledge base and Nelson Mattos's
       July 2026 newsletter — grounded in <code>07-impact-facts.md</code> and the voice/guardrail rules in
       <code>SYSTEM_PROMPT.md</code>. Nothing here has been posted anywhere; every card needs a human approval
-      first. Approvals, revisions and "posted" status are saved in <b>this browser only</b> (no shared server) —
-      see the project README if you want a version your whole team can approve from.
+      first. Approvals, revision notes, "posted" status, AI drafts and the calendar are <b>shared with the team</b>
+      once a shared store is connected (the badge next to the title says which mode is on); until then they are
+      saved in this browser only. Uploaded photos always stay in the browser that uploaded them.
       <br /><br />
       Photos shown are real stills auto-picked from Karimu's shared Google Drive (matched by ward/project/year) —
       they are a starting point, not a final choice. Every photo is marked <b>"Photo needs confirmation"</b> and
@@ -85,6 +86,7 @@
   <script src="kraft-render.js"></script>
   <script src="karimu-kit.js"></script>
   <script src="app.js"></script>
+  <script src="sync.js"></script>
   <script src="calendar.js"></script>
 </body>
 </html>
