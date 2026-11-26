@@ -41,6 +41,14 @@ Static site + one serverless function. No build step; Vercel zero-config.
 - `posts-batch-2026-11.js` — 14 Instagram drafts (two per pillar) written
   directly in the Karimu templates, English + Portuguese, inserted after the
   last post of their pillar. Figures carry source tags in `notes`.
+- **Reels & Shorts.** `tools/video/build-video.js` turns Drive clips into a
+  1080×1920 Reel / YouTube Short (hook, captions, Karimu end card; ~2.9 MB so
+  it fits one Drive connector upload) plus a 480×854 preview and a cover.
+  Full files live in the Drive folder "Content Studio – Reels e Shorts"; the
+  preview + cover are committed in `videos/previews/`. A video post
+  (`posts-videos-*.js`) carries `videos: { "en-US": {platform, preview, cover,
+  driveId, duration}, "pt-BR": {...} }`; the app shows the cover on the card
+  and a `<video>` preview + Drive download link in the modal.
 - `api/generate-posts.js` — calls the Anthropic API to draft new posts. Reads
   every file in `knowledge/` at request time and the photo library index.
   Needs `ANTHROPIC_API_KEY`; add `ANTHROPIC_WORKSPACE_ID` too if the key is
@@ -94,7 +102,8 @@ Static site + one serverless function. No build step; Vercel zero-config.
 A scheduled session runs every Monday ~7:00 (São Paulo) and follows
 `routines/weekly-posts.md`: reads the newest report, updates
 `07-impact-facts.md` if it is newer, writes 5 posts (rotating pillars via
-`routines/rotation.json`, never Fundraising), picks Drive photos, merges to
+`routines/rotation.json`, never Fundraising) plus 1 Instagram Reel and 1
+YouTube Short from Drive videos ≤10 MB, picks Drive photos, merges to
 production as Pending and emails Edu for approval. Change the procedure in that
 file, not in the scheduled task.
 

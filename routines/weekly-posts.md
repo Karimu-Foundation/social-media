@@ -1,4 +1,4 @@
-# Weekly routine — 5 new Karimu posts every Monday
+# Weekly routine — 5 new Karimu posts + 1 Reel + 1 Short every Monday
 
 Runs every **Monday at ~7:00 (America/Sao_Paulo)** as a scheduled Claude Code
 session. Each run starts from nothing: this file is the procedure. Follow it
@@ -100,7 +100,8 @@ Photos come from these places — search them **in this order**:
   Videos" and any new ones — hold the comms team's own selections. Files there
   are camera names (`IMG_9834.HEIC`), so take date and context from the
   **subfolder name**, and record ward/place as "Not recorded" unless the photo
-  itself or the folder makes it certain. Skip videos (`.MOV`).
+  itself or the folder makes it certain. Videos (`.MOV`) are not photos: they
+  are used only in step 4b.
 
 For each photo slot:
 1. Search by ward, place, project and year; prefer the last 12 months.
@@ -119,6 +120,42 @@ For each photo slot:
    `PIL.Image.open`, apply `ImageOps.exif_transpose`, and save as JPEG. If
    nothing fits, leave the slot as a `photoBrief` and write
    `ASSET NEEDED: ...` in `assets`.
+
+## 4b. One Instagram Reel + one YouTube Short (in addition to the 5 posts)
+
+Every week, besides the 5 image posts: **1 Reel for Instagram** and **1 Short
+for YouTube** (on YouTube, Shorts only — no long videos). Both are the
+**Shorts & Reels** pillar, but they do not use one of the 5 rotation slots.
+
+1. Find videos in the same folders as the photos (organized folder first,
+   then COMMS, then Karimu: Pictures): `mimeType contains 'video/'`. **For now,
+   only files of 10 MB or less** (the Drive connector cannot download bigger
+   ones). Prefer the last 12 months and a different story from last week's.
+2. Download, then **look at frames from every candidate** (e.g. `ffmpeg -i in
+   -vf fps=1 frame-%02d.jpg`) and discard accidental footage (camera pointed at
+   a table, the floor, pocket shots), shaky or dark clips, and anything against
+   the dignity / child-safety rules. Take place and date from the file or
+   folder name; if they are not certain, don't put them in a caption.
+3. Write a spec per language and platform and run
+   `node tools/video/build-video.js spec.json` (needs ffmpeg + Playwright, both
+   normally preinstalled; if `ffmpeg` is missing, `apt-get install -y ffmpeg`; the
+   header of the script documents the spec). 15–25s total, 2–4 clips, a hook
+   (≤ 6 words), one short caption per clip, end card "Follow along." (Reel) /
+   "Subscribe." (Short). English + Portuguese = 4 videos. The Reel and the
+   Short may share clips, but give each its own hook when there is enough
+   footage. No figures unless they are in `07-impact-facts.md`.
+4. Watch the outputs (frames of each). The full files are ~2.9 MB so each
+   fits one Drive connector upload: upload the 4 `.mp4` files to the Drive
+   folder **"Content Studio – Reels e Shorts"**
+   `1_6Rea4pU_Gyg5fjER2BGe2flko6kMQNq`, named like `reel-YYYY-MM-DD-en.mp4`.
+5. Copy the 4 `-preview.mp4` and `-cover.jpg` files to `videos/previews/` and
+   add both posts to `posts-videos-YYYY-MM-DD.js` (copy
+   `posts-videos-2026-11-26.js`: `videos["en-US"|"pt-BR"]` with preview, cover,
+   Drive id, duration; Reel → `channels: ["Instagram"]`, Short →
+   `channels: ["YouTube"]`; `flagged: true` with a consent note for people on
+   screen). Add its `<script>` tag after the last posts file in `index.html`.
+6. If no usable video ≤10 MB exists this week, skip 4b and say so in the email
+   (list the bigger candidates so the team can decide).
 
 ## 5. Build, check and publish to the Content Studio
 
@@ -145,7 +182,7 @@ For each photo slot:
 
 Send with Gmail to **eduardo.henrique@karimufoundation.org**, in Portuguese.
 
-- **Subject:** `Content Studio — 5 posts novos para aprovar (semana de DD/MM)`
+- **Subject:** `Content Studio — 5 posts + Reel + Short para aprovar (semana de DD/MM)`
 - **Body** (plain, short):
   1. One line: 5 new posts are in the Content Studio as Pending, with the link
      https://karimu-posts-app.vercel.app (and the PR link).
@@ -154,8 +191,12 @@ Send with Gmail to **eduardo.henrique@karimufoundation.org**, in Portuguese.
   3. **Dados novos:** if `07-impact-facts.md` was updated this week, say clearly
      that the posts already use the new data and list each changed figure
      (old → new, source). If not, "Nenhum report novo esta semana."
-  4. **Pendências:** every `flagged` post and every `[VERIFY]` / `ASSET NEEDED`.
-  5. How to approve: open the post → ✓ Approve, or ↩ Revise with a note.
+  4. **Reel e Short:** title of each, the preview is in the Content Studio, and
+     the Drive download links of the 4 files (EN/PT) plus the folder link
+     https://drive.google.com/drive/folders/1_6Rea4pU_Gyg5fjER2BGe2flko6kMQNq
+     (or why there are no videos this week).
+  5. **Pendências:** every `flagged` post and every `[VERIFY]` / `ASSET NEEDED`.
+  6. How to approve: open the post → ✓ Approve, or ↩ Revise with a note.
 - Attach one contact-sheet PNG with the English slides of all 5 posts (the
   screenshots from step 5.3) so the posts can be previewed from the email.
 
