@@ -155,8 +155,12 @@ for YouTube** (on YouTube, Shorts only — no long videos). Both are the
    Drive id, duration; Reel → `channels: ["Instagram"]`, Short →
    `channels: ["YouTube"]`; `flagged: true` with a consent note for people on
    screen). Add its `<script>` tag after the last posts file in `index.html`.
-6. If no usable video ≤10 MB exists this week, skip 4b and say so in the email
-   (list the bigger candidates so the team can decide).
+6. If no usable video ≤10 MB exists this week, make a **photo video** instead:
+   the same spec with 2–4 library photos as clips (`{ "file": ".../x.jpg",
+   "duration": 3.5–5, "focus": [x, y], "zoom": "in"|"out" }` — slow zoom,
+   cropped to 9:16; `focus` keeps faces in frame). Look at the frames like any
+   other video. Give the video a `note` saying it is a photo video, and list the
+   bigger Drive videos in the email so the team can export smaller copies.
 
 ## 5. Build, check and publish to the Content Studio
 

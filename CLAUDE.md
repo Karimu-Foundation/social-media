@@ -49,6 +49,9 @@ Static site + one serverless function. No build step; Vercel zero-config.
   (`posts-videos-*.js`) carries `videos: { "en-US": {platform, preview, cover,
   driveId, duration}, "pt-BR": {...} }`; the app shows the cover on the card
   and a `<video>` preview + Drive download link in the modal.
+  Clips can also be photos (slow zoom, `focus`/`zoom` per clip): until smaller
+  exports of the Drive footage exist, the older Reel/Short posts use photo
+  videos, attached in `posts-videos-existing.js`.
 - `api/generate-posts.js` — calls the Anthropic API to draft new posts. Reads
   every file in `knowledge/` at request time and the photo library index.
   Needs `ANTHROPIC_API_KEY`; add `ANTHROPIC_WORKSPACE_ID` too if the key is

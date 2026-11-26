@@ -506,7 +506,7 @@ function openModal(id, focusRevision, lang) {
   const artSize = artworkHTML && typeof KraftRender !== "undefined" ? KraftRender.sizeFor(post.format) : null;
   const tallClass = artSize && artSize.h >= 1900 ? " tall" : "";
   const vid = videoOf(post);
-  const artworkSection = vid ? `
+  const videoSection = vid ? `
     <section>
       <h4>Video <span style="text-transform:none; letter-spacing:0; font-weight:400;">(preview in reduced quality — the full 1080×1920 file is on the Drive)</span></h4>
       <div class="video-stage">
@@ -517,7 +517,11 @@ function openModal(id, focusRevision, lang) {
         <a class="button small ghost" href="${driveLink(vid.driveId, false)}" target="_blank" rel="noopener">Open in Drive</a>` : `<span class="artwork-note">Full file not uploaded yet.</span>`}
         <span class="artwork-note">${vid.platform === "short" ? "YouTube Short" : "Instagram Reel"} · 1080×1920${vid.duration ? ` · ${Math.round(vid.duration)}s` : ""}</span>
       </div>
-    </section>` : isKarimu ? karimuArtworkSection(post) : artworkHTML ? `
+      ${vid.note ? `<div class="artwork-note" style="margin-top:6px;">${escapeHTML(vid.note)}</div>` : ""}
+    </section>` : "";
+  // A video post that also has a Karimu cover slide shows both: the video and
+  // the cover artwork (used as the Reel / Short thumbnail).
+  const artworkSection = videoSection + (isKarimu ? karimuArtworkSection(post) : (!vid && artworkHTML) ? `
     <section>
       <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(kraft template — photo slots are shot briefs until a real photo is dropped in)</span></h4>
       <div class="artwork-stage">
@@ -527,7 +531,7 @@ function openModal(id, focusRevision, lang) {
         <button class="small" onclick="downloadArtwork('${post.id}')">⬇ Download PNG</button>
         <span class="artwork-note" id="artwork-note"></span>
       </div>
-    </section>` : "";
+    </section>` : "");
 
   // Photo slots the team can fill themselves. Uploads are per-browser, like
   // approvals, and always land flagged for consent review.
@@ -598,7 +602,7 @@ function openModal(id, focusRevision, lang) {
       ${shotsTable}
 
       ${artworkSection}
-      ${vid ? "" : uploadSection}
+      ${vid && !isKarimu ? "" : uploadSection}
 
       ${gallery}
 
