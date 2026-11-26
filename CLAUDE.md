@@ -30,9 +30,17 @@ change to generation logic must keep them intact:
 
 Static site + one serverless function. No build step; Vercel zero-config.
 
-- `index.html` / `styles.css` / `app.js` — the review UI. State (approvals,
-  AI drafts, removed posts) lives in `localStorage` only, per browser. There
-  is no shared backend.
+- `index.html` / `styles.css` / `app.js` — the review UI. State lives in
+  `localStorage`; with a shared store connected, `sync.js` also shares it.
+- **Shared state** (`sync.js`, `api/state.js`, `lib/store.js`). With Upstash
+  Redis connected (Vercel → Storage; `KV_REST_API_URL` + `KV_REST_API_TOKEN`),
+  approvals, revision notes, "Posted" and AI drafts are one field per post in
+  Redis hashes (`karimu:approvals:v1`, `karimu:generated:v1`), so people
+  editing different posts never clash. `sync.js` wraps `saveState` /
+  `saveGenerated`, polls every 30s, and on a browser's first shared load
+  uploads what only that browser had. The header badge says "Shared with the
+  team" or "Saved in this browser only". Removed seed posts and uploaded
+  photos stay per browser.
 - `posts-data.js` — the seed post queue.
 - `posts-karimu.js` — Karimu-style artwork for the seed queue: per post id,
   its format, English slides and a Portuguese version. Loaded right after
@@ -131,9 +139,9 @@ file, not in the scheduled task.
 - The library is a snapshot. New photos on the Drive do not appear
   automatically. A durable fix is a Google service account + an `/api/photo`
   proxy endpoint so the app can query Drive at runtime.
-- No shared state except the calendar: two team members don't see each
-  other's approvals or drafts, so "Approved posts" in the calendar lists what
-  was approved in that browser.
+- Sharing needs the Upstash store connected in Vercel; until then approvals,
+  drafts and the calendar are per browser. Uploaded photos are always per
+  browser.
 
 ## When updating knowledge
 
