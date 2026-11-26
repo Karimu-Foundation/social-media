@@ -267,6 +267,21 @@ function inLanguage(post, lang) {
   });
 }
 
+// Reels / Shorts: a post can carry `videos: { "en-US": {...}, "pt-BR": {...} }`
+// with a small preview MP4 committed to the repo (videos/previews/), a cover
+// JPG, and the Drive id of the full-quality file. The preview follows the
+// language the post is shown in.
+function videoOf(post) {
+  if (!post || !post.videos) return null;
+  return post.videos[post.language || langOf(post)] || post.videos["en-US"] || null;
+}
+
+function driveLink(id, download) {
+  return download
+    ? `https://drive.google.com/uc?export=download&id=${encodeURIComponent(id)}`
+    : `https://drive.google.com/file/d/${encodeURIComponent(id)}/view`;
+}
+
 // The version a card shows: the language filter's, when the post has it.
 function displayLanguage(post) {
   if (filters.language !== "all" && languagesOf(post).includes(filters.language)) return filters.language;
@@ -333,7 +348,13 @@ function cardHTML(post) {
   const artHTML = art ? art.html : null;
   const artSize = art ? art.size : null;
   const slideCount = art && art.slides > 1 ? `<span class="badge slide-count">${art.slides} slides</span>` : "";
-  const thumb = artHTML ? `
+  const vid = videoOf(post);
+  const thumb = vid ? `
+    <div class="card-thumb card-thumb-video">
+      <img src="${vid.cover}" alt="${escapeHTML(post.title)}" loading="lazy" />
+      <span class="play-badge">▶</span>
+      <span class="badge slide-count">${vid.platform === "short" ? "YouTube Short" : "Instagram Reel"}${vid.duration ? ` · ${Math.round(vid.duration)}s` : ""}</span>
+    </div>` : artHTML ? `
     <div class="card-thumb card-thumb-art" style="aspect-ratio:${artSize.w}/${artSize.h}">
       <div class="thumb-scaler">${artHTML}</div>${slideCount}
     </div>` : hasImages ? `
@@ -484,7 +505,19 @@ function openModal(id, focusRevision, lang) {
   const artworkHTML = isKarimu ? null : ((typeof KraftRender !== "undefined" && KraftRender.render(post)) || null);
   const artSize = artworkHTML && typeof KraftRender !== "undefined" ? KraftRender.sizeFor(post.format) : null;
   const tallClass = artSize && artSize.h >= 1900 ? " tall" : "";
-  const artworkSection = isKarimu ? karimuArtworkSection(post) : artworkHTML ? `
+  const vid = videoOf(post);
+  const artworkSection = vid ? `
+    <section>
+      <h4>Video <span style="text-transform:none; letter-spacing:0; font-weight:400;">(preview in reduced quality — the full 1080×1920 file is on the Drive)</span></h4>
+      <div class="video-stage">
+        <video controls playsinline preload="metadata" poster="${vid.cover}" src="${vid.preview}"></video>
+      </div>
+      <div class="actions" style="margin-top:10px;">
+        ${vid.driveId ? `<a class="button small" href="${driveLink(vid.driveId, true)}" target="_blank" rel="noopener">⬇ Download full video (Drive)</a>
+        <a class="button small ghost" href="${driveLink(vid.driveId, false)}" target="_blank" rel="noopener">Open in Drive</a>` : `<span class="artwork-note">Full file not uploaded yet.</span>`}
+        <span class="artwork-note">${vid.platform === "short" ? "YouTube Short" : "Instagram Reel"} · 1080×1920${vid.duration ? ` · ${Math.round(vid.duration)}s` : ""}</span>
+      </div>
+    </section>` : isKarimu ? karimuArtworkSection(post) : artworkHTML ? `
     <section>
       <h4>Artwork <span style="text-transform:none; letter-spacing:0; font-weight:400;">(kraft template — photo slots are shot briefs until a real photo is dropped in)</span></h4>
       <div class="artwork-stage">
@@ -565,7 +598,7 @@ function openModal(id, focusRevision, lang) {
       ${shotsTable}
 
       ${artworkSection}
-      ${uploadSection}
+      ${vid ? "" : uploadSection}
 
       ${gallery}
 
