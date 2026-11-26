@@ -52,6 +52,18 @@ Static site + one serverless function. No build step; Vercel zero-config.
   Clips can also be photos (slow zoom, `focus`/`zoom` per clip): until smaller
   exports of the Drive footage exist, the older Reel/Short posts use photo
   videos, attached in `posts-videos-existing.js`.
+- **Calendar tab** (`calendar.js`, `api/calendar.js`). Header tabs switch
+  between "Review queue" and "Calendar" (`#review` / `#calendar`). The
+  calendar has the week's themes (text, pillar, who, done) and notes, and a
+  Mon–Sun grid where approved posts are dragged (or "+ Add"-ed) onto days,
+  with time, channel, language, "Posted", plus free-text note slots. Unlike
+  the rest of the app it is **shared**: one document in Upstash Redis via
+  `/api/calendar` (compare-and-set on `rev`; on 409 the browser re-applies its
+  change and retries; polls every 30s). Needs `KV_REST_API_URL` +
+  `KV_REST_API_TOKEN` (or the `UPSTASH_REDIS_REST_*` pair), set by connecting
+  Upstash for Redis in Vercel → Storage. Without them it answers 503 and the
+  calendar is saved in the browser; the first shared load carries that copy
+  over. Slots keep a snapshot of the post (title, pillar, format, channels).
 - `api/generate-posts.js` — calls the Anthropic API to draft new posts. Reads
   every file in `knowledge/` at request time and the photo library index.
   Needs `ANTHROPIC_API_KEY`; add `ANTHROPIC_WORKSPACE_ID` too if the key is
@@ -119,7 +131,9 @@ file, not in the scheduled task.
 - The library is a snapshot. New photos on the Drive do not appear
   automatically. A durable fix is a Google service account + an `/api/photo`
   proxy endpoint so the app can query Drive at runtime.
-- No shared state: two team members don't see each other's approvals or drafts.
+- No shared state except the calendar: two team members don't see each
+  other's approvals or drafts, so "Approved posts" in the calendar lists what
+  was approved in that browser.
 
 ## When updating knowledge
 

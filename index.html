@@ -15,7 +15,11 @@
         <small>Post review &amp; approval</small>
       </div>
     </div>
-    <div class="top-actions">
+    <nav class="view-tabs">
+      <button data-view="review" onclick="setView('review')">Review queue</button>
+      <button data-view="calendar" onclick="setView('calendar')">Calendar</button>
+    </nav>
+    <div class="top-actions review-only">
       <input type="search" id="filter-search" placeholder="Search posts…" />
       <select id="filter-channel"></select>
       <select id="filter-language" title="Show posts in this language">
@@ -35,6 +39,7 @@
   </header>
 
   <main>
+    <div id="review-view">
     <div class="overview">
       <div class="stat total"><div class="n" id="stat-total">0</div><div class="l">Total posts</div></div>
       <div class="stat pending"><div class="n" id="stat-pending">0</div><div class="l">Pending</div></div>
@@ -60,6 +65,9 @@
     </div>
 
     <div id="pillars"></div>
+    </div>
+
+    <div id="calendar-view" hidden></div>
   </main>
 
   <footer class="app-footer">Karimu Content Studio — internal review tool, not connected to any publishing platform.</footer>
@@ -77,5 +85,6 @@
   <script src="kraft-render.js"></script>
   <script src="karimu-kit.js"></script>
   <script src="app.js"></script>
+  <script src="calendar.js"></script>
 </body>
 </html>
