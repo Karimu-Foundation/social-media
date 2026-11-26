@@ -42,7 +42,7 @@ Static site + one serverless function. No build step; Vercel zero-config.
   directly in the Karimu templates, English + Portuguese, inserted after the
   last post of their pillar. Figures carry source tags in `notes`.
 - **Reels & Shorts.** `tools/video/build-video.js` turns Drive clips into a
-  1080×1920 Reel / YouTube Short (hook, captions, Karimu end card; ~2.9 MB so
+  1080×1920 Reel / YouTube Short (Karimu logo on every clip, hook, captions, end card; ~2.9 MB so
   it fits one Drive connector upload) plus a 480×854 preview and a cover.
   Full files live in the Drive folder "Content Studio – Reels e Shorts"; the
   preview + cover are committed in `videos/previews/`. A video post

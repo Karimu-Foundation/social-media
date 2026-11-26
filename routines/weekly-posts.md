@@ -140,7 +140,8 @@ for YouTube** (on YouTube, Shorts only — no long videos). Both are the
    `node tools/video/build-video.js spec.json` (needs ffmpeg + Playwright, both
    normally preinstalled; if `ffmpeg` is missing, `apt-get install -y ffmpeg`; the
    header of the script documents the spec). 15–25s total, 2–4 clips, a hook
-   (≤ 6 words), one short caption per clip, end card "Follow along." (Reel) /
+   (≤ 6 words), one short caption per clip, the small Karimu logo top-left
+   on every clip (on by default), end card with the full logo and "Follow along." (Reel) /
    "Subscribe." (Short). English + Portuguese = 4 videos. The Reel and the
    Short may share clips, but give each its own hook when there is enough
    footage. No figures unless they are in `07-impact-facts.md`.

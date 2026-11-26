@@ -15,11 +15,13 @@
 //   ],
 //   "end": { "title": "Built by the community.", "highlight": "Follow along.", "sub": "..." },
 //   "logo": "/abs/path/images/logo-h-white.png",  // optional; defaults to the repo logo
-//   "keepAudio": true                             // optional; ambient sound from the clips (default true)
+//   "keepAudio": true,                            // optional; ambient sound from the clips (default true)
+//   "watermark": true                             // optional; small white Karimu logo top-left on every clip (default true)
 // }
 //
 // Output: 1080x1920 H.264/AAC MP4, 30 fps. Horizontal clips sit on a blurred
-// fill of themselves. The hook shows for the first 3.5s of clip 1; captions
+// fill of themselves. A small white Karimu logo sits top-left (just below the
+// app UI) on every clip; the end card carries the full logo. The hook shows for the first 3.5s of clip 1; captions
 // stay for each whole clip; a 3s Karimu end card closes the video. Text stays
 // out of the top 250px and bottom 400px (Instagram / YouTube UI). The full
 // file is encoded to ~2.9 MB (two passes) so it fits one Drive connector upload.
@@ -63,16 +65,18 @@ async function overlays() {
   const end = spec.end || {};
   const endHl = end.highlight || (spec.platform === "short" ? T.subscribe : T.follow);
   const endTitle = end.title ? end.title + " " + endHl : endHl;
+  const wm = spec.watermark === false ? "" : `<img class="wm" src="file://${logo}">`;
   const frames = [];
-  frames.push(`<div class="f" id="hook"><div class="hook"><span class="pill">▶ ${esc((spec.hook || {}).pill || "Karimu")}</span><div class="h">${hl((spec.hook || {}).title, (spec.hook || {}).highlight)}</div></div>${spec.clips[0].caption ? `<div class="cap"><b>${esc(spec.clips[0].caption)}</b></div>` : ""}</div>`);
-  spec.clips.forEach((c, i) => frames.push(`<div class="f" id="cap${i}">${c.caption ? `<div class="cap"><b>${esc(c.caption)}</b></div>` : ""}</div>`));
+  frames.push(`<div class="f" id="hook">${wm}<div class="hook"><span class="pill">▶ ${esc((spec.hook || {}).pill || "Karimu")}</span><div class="h">${hl((spec.hook || {}).title, (spec.hook || {}).highlight)}</div></div>${spec.clips[0].caption ? `<div class="cap"><b>${esc(spec.clips[0].caption)}</b></div>` : ""}</div>`);
+  spec.clips.forEach((c, i) => frames.push(`<div class="f" id="cap${i}">${wm}${c.caption ? `<div class="cap"><b>${esc(c.caption)}</b></div>` : ""}</div>`));
   frames.push(`<div class="f end" id="end"><div class="bar"><i style="background:#4A8BD0"></i><i style="background:#6DB33F"></i><i style="background:#8B6FC1"></i><i style="background:#E07A47"></i><i style="background:#52AE5E"></i></div><div class="in"><div class="k"><i></i>Karimu</div><div class="t">${hl(endTitle, endHl)}</div>${end.sub ? `<div class="s">${esc(end.sub)}</div>` : ""}</div><img src="file://${logo}"></div>`);
   const html = `<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700;800;900&display=swap">
 <style>
 html,body{margin:0;background:transparent}
 .f{width:1080px;height:1920px;position:relative;font-family:Figtree,sans-serif;overflow:hidden}
-.hook{position:absolute;left:70px;right:70px;top:300px}
+.wm{position:absolute;left:70px;top:260px;height:64px;opacity:.95;filter:drop-shadow(0 2px 10px rgba(0,0,0,.55))}
+.hook{position:absolute;left:70px;right:70px;top:380px}
 .pill{display:inline-block;background:#F2C14E;color:#2B5B7E;font-weight:800;font-size:30px;letter-spacing:.12em;text-transform:uppercase;padding:14px 28px;border-radius:999px}
 .h{margin-top:26px;font-weight:900;font-size:96px;line-height:1.02;letter-spacing:-.02em;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.55)}
 .h span{color:#F2C14E}

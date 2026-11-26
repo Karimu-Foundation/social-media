@@ -42,8 +42,8 @@ Follow along for more from the field.`,
       altText: "Short video: volunteers arrive at a school competition in Ayalagaya, Tanzania, followed by a Karimu end card.",
       notes: CLIPS_NOTE,
       videos: {
-        "en-US": vid("reel-2026-11-26-en", "reel", "1pwFINUQYrCvGnYZaxS-D7wtzLqSQqkp0"),
-        "pt-BR": vid("reel-2026-11-26-pt", "reel", "1I_lE4rI6Oy86VVcAZ2HwFbq9znKtz0Ht"),
+        "en-US": vid("reel-2026-11-26-en", "reel", "1ELMpKCemQmxmo-cvCuI-G_t_N1bYQJXD"),
+        "pt-BR": vid("reel-2026-11-26-pt", "reel", "15d580_GelXFuDSsEX-oYzhZT9zYPigFD"),
       },
       pt: {
         title: "Reel: uma semana com a comunidade",
@@ -70,8 +70,8 @@ Subscribe for more from Ayalagaya, Arri and Dabil.`,
       altText: "Short video: volunteers arrive at a school competition in Ayalagaya, Tanzania, followed by a Karimu end card.",
       notes: CLIPS_NOTE + " YouTube title suggestion: 'A week with the community in Ayalagaya #Shorts'.",
       videos: {
-        "en-US": vid("short-2026-11-26-en", "short", "1n8doZfGYJpvV-7TuUjoxtu1BYvNtfDVl"),
-        "pt-BR": vid("short-2026-11-26-pt", "short", "1tc9o3b_CPmkQ_aAn3d6KkoLL-2tf6KOn"),
+        "en-US": vid("short-2026-11-26-en", "short", "1WJ_OdmYk0U2N6jnAjNIMpX7_JzGFAw2b"),
+        "pt-BR": vid("short-2026-11-26-pt", "short", "1yUwd-GY2bbFaIWLiBaZ_Waqs-hnRvNvb"),
       },
       pt: {
         title: "Short: uma semana com a comunidade",
